@@ -5,7 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import UnoCSS from 'unocss/vite'
 import Icons from 'unplugin-icons/vite'
-import { defineConfig } from 'vite'
+import { defaultClientConditions, defineConfig } from 'vite'
 import dts from 'vite-plugin-dts'
 
 // https://vitejs.dev/config/
@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => {
   ]
 
   const resolve = {
+    conditions: ['worker', ...defaultClientConditions],
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       'squirrel-x': fileURLToPath(new URL('./src/components/index.ts', import.meta.url)),

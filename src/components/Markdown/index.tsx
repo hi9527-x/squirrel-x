@@ -2,17 +2,21 @@ import { watchDebounced } from '@vueuse/core'
 import clsx from 'clsx'
 import DOMPurify from 'dompurify'
 import { drop, isBoolean } from 'es-toolkit'
+import { toJsxRuntime } from 'hast-util-to-jsx-runtime'
 import type { FootnoteDefinition, Root, RootContent } from 'mdast'
+import rehypeRaw from 'rehype-raw'
 import remarkGemoji from 'remark-gemoji'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import remarkParse from 'remark-parse'
+import remarkRehype from 'remark-rehype'
 import type { CodeProps } from 'squirrel-x'
 import { Button, Code, Popover } from 'squirrel-x'
 import { unified } from 'unified'
 import { visit } from 'unist-util-visit'
 import type { SlotsType, VNode } from 'vue'
 import { defineComponent, h, ref, shallowRef } from 'vue'
+import { Fragment, jsx } from 'vue/jsx-runtime'
 
 import { cn, isEmptyElement } from '@/utils'
 import IconCircleAlert from '~icons/lucide/circle-alert'
@@ -81,34 +85,36 @@ export type MdRenderEmits = {}
 
 const processor = unified()
   .use(remarkParse)
-  .use(() => {
-    return (tree: Root) => {
-      visit(tree, 'blockquote', (node, index, parent) => {
-        const children = node.children
-        const firstNode = children[0]
+  // .use(() => {
+  //   return (tree: Root) => {
+  //     visit(tree, 'blockquote', (node, index, parent) => {
+  //       const children = node.children
+  //       const firstNode = children[0]
 
-        if (firstNode?.type === 'paragraph' && firstNode.children?.[0]?.type === 'text') {
-          const firstTextNode = firstNode.children?.[0]
-          if (!firstTextNode || !firstTextNode.value) return
+//       if (firstNode?.type === 'paragraph' && firstNode.children?.[0]?.type === 'text') {
+//         const firstTextNode = firstNode.children?.[0]
+//         if (!firstTextNode || !firstTextNode.value) return
 
-          const match = firstTextNode.value.match(alterStateReg)
-          if (match?.[1]) {
-            firstTextNode.value = firstTextNode.value.replace(match[0], '')
-            // @ts-expect-error 允许修改
-            node.type = 'blockquote-alter'
-            // @ts-expect-error 允许修改
-            node.alter = match[1].toLowerCase()
-          }
-        }
-      })
-    }
-  })
+  //         const match = firstTextNode.value.match(alterStateReg)
+  //         if (match?.[1]) {
+  //           firstTextNode.value = firstTextNode.value.replace(match[0], '')
+  //           // @ts-expect-error 允许修改
+  //           node.type = 'blockquote-alter'
+  //           // @ts-expect-error 允许修改
+  //           node.alter = match[1].toLowerCase()
+  //         }
+  //       }
+  //     })
+  //   }
+  // })
   .use(remarkGemoji)
   .use(remarkGfm)
   .use(remarkMath)
+  .use(remarkRehype, { allowDangerousHtml: true })
+  .use(rehypeRaw)
 
 const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderSlots>((props, ctx) => {
-  const mdAst = shallowRef<RootContent[]>([])
+  const mdAst = shallowRef<any>(null)
   const loading = shallowRef(false)
   const footnoteList = ref<Record<string, FootnoteDefinition['children']>>({})
 
@@ -118,16 +124,18 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
 
       loading.value = true
 
-      const ast = await processor.run(processor.parse(props.content || '')) as Root
-      footnoteList.value = {}
-      visit(ast, 'footnoteDefinition', (node) => {
-        if (!Array.isArray(footnoteList.value[node.identifier])) {
-          footnoteList.value[node.identifier] = []
-        }
-        footnoteList.value[node.identifier].push(...node.children)
-      })
+      const ast = await processor.run(processor.parse(props.content || ''))
+      console.log('>>', ast)
 
-      mdAst.value = ast.children
+      footnoteList.value = {}
+      // visit(ast, 'footnoteDefinition', (node) => {
+      //   if (!Array.isArray(footnoteList.value[node.identifier])) {
+      //     footnoteList.value[node.identifier] = []
+      //   }
+      //   footnoteList.value[node.identifier].push(...node.children)
+      // })
+
+      mdAst.value = ast
     }
     catch (error) {
       console.error(error)
@@ -358,6 +366,22 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
   }
 
   return () => {
+    if (!mdAst.value) return null
+    const astRender = toJsxRuntime(mdAst.value, {
+      Fragment,
+      jsx,
+      jsxs: jsx,
+      elementAttributeNameCase: 'html',
+      components: {
+        code: (props) => {
+          const { children, className, node, ...rest } = props
+          console.log('>>', children)
+
+          return <div>code</div>
+        },
+      },
+    })
+
     return (
       <div
         class={cn(
@@ -367,7 +391,8 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
           props.class,
         )}
       >
-        {render(mdAst.value)}
+        {/* {render(mdAst.value)} */}
+        {astRender}
       </div>
     )
   }

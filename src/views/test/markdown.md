@@ -1,19 +1,42 @@
-Here's a simple footnote,[^1] and here's a longer one.[^bignote]
+**粗体**<span style="color: red">1<a>x*斜体*x</a>2</span>
 
-[^1]: This is the first footnote.
+```js
+console.log('It works!')
+```
 
-[^bignote]: Here's one with multiple paragraphs and code.
+## 自定义echarts组件渲染
 
-    Indent paragraphs to include them in the footnote.
-
-    `{ my code }`
-
-    Add as many paragraphs as you like.
-
-## 表情
-
-去露营了！ :tent: 很快回来。
-
-真好笑！ :joy:
-
-### My Great Heading {#custom-id}
+```x-echarts
+{
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat",
+      "Sun"
+    ]
+  },
+  "yAxis": {
+    "type": "value"
+  },
+  "series": [
+    {
+      "data": [
+        820,
+        932,
+        901,
+        934,
+        1290,
+        1330,
+        1320
+      ],
+      "type": "line",
+      "smooth": true
+    }
+  ]
+}
+```

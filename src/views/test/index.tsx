@@ -1,6 +1,14 @@
+import { toJsxRuntime } from 'hast-util-to-jsx-runtime'
+import rehypeRaw from 'rehype-raw'
+import remarkGemoji from 'remark-gemoji'
+import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import remarkParse from 'remark-parse'
+import remarkRehype from 'remark-rehype'
 import { Markdown } from 'squirrel-x'
+import { unified } from 'unified'
 import type { SlotsType, VNode } from 'vue'
-import { defineComponent } from 'vue'
+import { defineComponent, Fragment, h } from 'vue'
 
 import content from './markdown.md?raw'
 
@@ -15,11 +23,7 @@ const Test = defineComponent<Props, Emits, string, Slots>((props, ctx) => {
   return () => {
     return (
       <div class="p4">
-        <Markdown
-          content={content}
-        />
-
-        <span>&#x1F60A;</span>
+        <Markdown content={content} />
       </div>
     )
   }
