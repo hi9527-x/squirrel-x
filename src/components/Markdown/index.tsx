@@ -2,8 +2,8 @@ import { watchDebounced } from '@vueuse/core'
 import clsx from 'clsx'
 import DOMPurify from 'dompurify'
 import { drop, isBoolean } from 'es-toolkit'
-import { toJsxRuntime } from 'hast-util-to-jsx-runtime'
-import type { FootnoteDefinition, Root, RootContent } from 'mdast'
+// import type { FootnoteDefinition, Root, RootContent } from 'mdast'
+import type { Root, RootContent } from 'hast'
 import rehypeRaw from 'rehype-raw'
 import remarkGemoji from 'remark-gemoji'
 import remarkGfm from 'remark-gfm'
@@ -18,7 +18,7 @@ import type { SlotsType, VNode } from 'vue'
 import { defineComponent, h, ref, shallowRef } from 'vue'
 import { Fragment, jsx } from 'vue/jsx-runtime'
 
-import { cn, isEmptyElement } from '@/utils'
+import { cn, isArrayEmpty, isEmptyElement } from '@/utils'
 import IconCircleAlert from '~icons/lucide/circle-alert'
 import IconInfo from '~icons/lucide/info'
 import IconLightbulb from '~icons/lucide/lightbulb'
@@ -69,9 +69,10 @@ const alterStateMap: Record<AlterKey, { icon: VNode, class: string }> = {
 
 const alterStateReg = new RegExp(`^\\[!(${Object.keys(alterStateMap).join('|')})\\]\n?`, 'i')
 
-type MDAstContent = RootContent | RootContent[]
+type HAstContent = RootContent | RootContent[]
 export type MdRenderSlots = SlotsType<{
-  customRender?: (params: { ast: RootContent, childrenRender: (ast: MDAstContent) => VNode }) => VNode[]
+  customRender?: (params: { ast: RootContent, childrenRender: (ast: HAstContent) => VNode }) => VNode[]
+  code?: (params: { language: string, code: string }) => VNode[]
 }>
 
 export type MdRenderProps = {
@@ -114,9 +115,9 @@ const processor = unified()
   .use(rehypeRaw)
 
 const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderSlots>((props, ctx) => {
-  const mdAst = shallowRef<any>(null)
+  const hAst = shallowRef<RootContent[]>([])
   const loading = shallowRef(false)
-  const footnoteList = ref<Record<string, FootnoteDefinition['children']>>({})
+  // const footnoteList = ref<Record<string, FootnoteDefinition['children']>>({})
 
   const parseMdText2Ast = async () => {
     try {
@@ -124,10 +125,10 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
 
       loading.value = true
 
-      const ast = await processor.run(processor.parse(props.content || ''))
+      const ast = await processor.run(processor.parse(props.content || '')) as Root
       console.log('>>', ast)
 
-      footnoteList.value = {}
+      // footnoteList.value = {}
       // visit(ast, 'footnoteDefinition', (node) => {
       //   if (!Array.isArray(footnoteList.value[node.identifier])) {
       //     footnoteList.value[node.identifier] = []
@@ -135,7 +136,7 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
       //   footnoteList.value[node.identifier].push(...node.children)
       // })
 
-      mdAst.value = ast
+      hAst.value = ast.children
     }
     catch (error) {
       console.error(error)
@@ -155,207 +156,247 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
     maxWait: 100,
   })
 
-  const render = (ast: MDAstContent): VNode => {
+  const render = (ast: HAstContent): VNode => {
     const currentAst = Array.isArray(ast) ? ast : [ast]
 
     const htmlRender = !!props.htmlRender
     return (
       <>
-        {currentAst.map((astItem) => {
-          const slotCustomRenderRender = ctx.slots.customRender?.({ ast: astItem, childrenRender: render })
+        {currentAst.map((astIt) => {
+          const slotCustomRender = ctx.slots.customRender?.({ ast: astIt, childrenRender: render })
 
-          const arr = slotCustomRenderRender?.filter(ele => !isEmptyElement(ele))?.map((ele: any) => h(ele)) ?? []
+          const customRenderArr = slotCustomRender?.filter(ele => !isEmptyElement(ele))?.map((ele: any) => h(ele)) ?? []
 
-          if (arr.length) return arr
+          if (customRenderArr.length) return customRenderArr
 
-          if (astItem.type === 'paragraph') {
-            return <p>{render(astItem.children)}</p>
-          }
-
-          if (astItem.type === 'heading') {
-            const depth = astItem.depth ?? 6
-            return h(`h${depth}`, {}, render(astItem.children))
-          }
-
-          if (astItem.type === 'code') {
-            if (!astItem.lang) return null
-
-            return (
-              <Code
-                code={astItem.value ?? ''}
-                language={astItem.lang ?? ''}
-                {...props.codeProps}
-              />
-            )
-          }
-
-          if (astItem.type === 'list') {
-            if (astItem.ordered) {
-              return (
-                <ol>
-                  {render(astItem.children)}
-                </ol>
-              )
-            }
-
-            const isTaskNode = isBoolean(astItem.children?.[0]?.checked)
-            return (
-              <ul
-                class={clsx(isTaskNode ? ghStyles['contains-task-list'] : '')}
-              >
-                {render(astItem.children)}
-              </ul>
-            )
-          }
-
-          if (astItem.type === 'listItem') {
-            const isTaskNode = isBoolean(astItem.checked)
-            const node: RootContent[] = []
-            astItem.children.forEach((it) => {
-              if (it.type === 'paragraph') {
-                node.push(...it.children)
+          if (astIt.type === 'element') {
+            const tagName = astIt.tagName
+            if (tagName === 'pre') {
+              const first = astIt.children[0].type === 'element' ? astIt.children[0] : null
+              if (first) {
+                const classNames = first.properties.className
+                if (Array.isArray(classNames) && classNames.length) {
+                  let lang = ''
+                  let code = ''
+                  for (let i = 0; i < classNames.length; i++) {
+                    const cls = classNames[i].toString()
+                    const langMatch = cls.match(/^language-([\w-]+)$/)?.[1] ?? ''
+                    if (langMatch) {
+                      lang = langMatch
+                      break
+                    }
+                  }
+                  if (lang) {
+                    code = first.children[0].type === 'text' ? first.children[0].value : ''
+                    const codeSlots = ctx.slots.code?.({ language: lang, code })
+                    const codeSlotsArr = codeSlots?.filter(ele => !isEmptyElement(ele))?.map((ele: any) => h(ele)) ?? []
+                    if (codeSlotsArr.length) return codeSlotsArr
+                    return (
+                      <Code
+                        code={code}
+                        language={lang}
+                        {...props.codeProps}
+                      />
+                    )
+                  }
+                }
               }
-            })
-            return (
-              <li
-                class={clsx(isTaskNode ? ghStyles['task-list-item'] : '')}
-              >
-                {isTaskNode && (
-                  <input
-                    type="checkbox"
-                    class={ghStyles['task-list-item-checkbox']}
-                    checked={!!astItem.checked}
-                    disabled
-                  />
-                )}
-                {render(isTaskNode ? node : astItem.children)}
-              </li>
-            )
+            }
+            return h(astIt.tagName, { ...astIt.properties }, render(astIt.children))
           }
 
-          if (astItem.type === 'inlineCode') {
-            return <code>{astItem.value}</code>
+          if (astIt.type === 'text') {
+            return astIt.value
           }
 
-          if (astItem.type === 'strong') {
-            return <strong>{render(astItem.children)}</strong>
-          }
-          if (astItem.type === 'delete') {
-            return (
-              <del>{render(astItem.children)}</del>
-            )
-          }
+          // if (astItem.type === 'paragraph') {
+          //   return <p>{render(astItem.children)}</p>
+          // }
 
-          if (astItem.type === 'emphasis') {
-            return <em>{render(astItem.children)}</em>
-          }
+          // if (astItem.type === 'heading') {
+          //   const depth = astItem.depth ?? 6
+          //   return h(`h${depth}`, {}, render(astItem.children))
+          // }
 
-          if (astItem.type === 'image') {
-            return <img src={astItem.url} />
-          }
+          // if (astItem.type === 'code') {
+          //   if (!astItem.lang) return null
 
-          if (astItem.type === 'link') {
-            return (
-              <a
-                title={astItem.title || ''}
-                href={astItem.url}
-              >
-                {render(astItem.children)}
-              </a>
-            )
-          }
+          //   return (
+          //     <Code
+          //       code={astItem.value ?? ''}
+          //       language={astItem.lang ?? ''}
+          //       {...props.codeProps}
+          //     />
+          //   )
+          // }
 
-          if (astItem.type === 'blockquote-alter') {
-            const alterState = alterStateMap[astItem.alter]
-            if (!alterState) return null
-            return (
-              <div class={[ghStyles['markdown-alert'], alterState.class]}>
-                <p class={ghStyles['markdown-alert-title']}>
-                  {h(alterState.icon, {
-                    class: ['mr-2'],
-                  })}
-                  {astItem.alter.toUpperCase()}
-                </p>
-                {render(astItem.children)}
-              </div>
-            )
-          }
+          // if (astItem.type === 'list') {
+          //   if (astItem.ordered) {
+          //     return (
+          //       <ol>
+          //         {render(astItem.children)}
+          //       </ol>
+          //     )
+          //   }
 
-          if (astItem.type === 'blockquote') {
-            return (
-              <blockquote>
-                {render(astItem.children)}
-              </blockquote>
-            )
-          }
+          //   const isTaskNode = isBoolean(astItem.children?.[0]?.checked)
+          //   return (
+          //     <ul
+          //       class={clsx(isTaskNode ? ghStyles['contains-task-list'] : '')}
+          //     >
+          //       {render(astItem.children)}
+          //     </ul>
+          //   )
+          // }
 
-          if (astItem.type === 'table') {
-            const thead = astItem.children?.[0]?.children?.map((cell) => {
-              return <th>{render(cell.children)}</th>
-            })
+          // if (astItem.type === 'listItem') {
+          //   const isTaskNode = isBoolean(astItem.checked)
+          //   const node: RootContent[] = []
+          //   astItem.children.forEach((it) => {
+          //     if (it.type === 'paragraph') {
+          //       node.push(...it.children)
+          //     }
+          //   })
+          //   return (
+          //     <li
+          //       class={clsx(isTaskNode ? ghStyles['task-list-item'] : '')}
+          //     >
+          //       {isTaskNode && (
+          //         <input
+          //           type="checkbox"
+          //           class={ghStyles['task-list-item-checkbox']}
+          //           checked={!!astItem.checked}
+          //           disabled
+          //         />
+          //       )}
+          //       {render(isTaskNode ? node : astItem.children)}
+          //     </li>
+          //   )
+          // }
 
-            const tbody = drop(astItem.children, 1).map((row) => {
-              return (
-                <tr>
-                  {render(row.children)}
-                </tr>
-              )
-            })
+          // if (astItem.type === 'inlineCode') {
+          //   return <code>{astItem.value}</code>
+          // }
 
-            return (
-              <table>
-                <thead>
-                  <tr>{thead}</tr>
-                </thead>
-                <tbody>{tbody}</tbody>
-              </table>
-            )
-          }
+          // if (astItem.type === 'strong') {
+          //   return <strong>{render(astItem.children)}</strong>
+          // }
+          // if (astItem.type === 'delete') {
+          //   return (
+          //     <del>{render(astItem.children)}</del>
+          //   )
+          // }
 
-          if (astItem.type === 'tableCell') {
-            return <td>{render(astItem.children)}</td>
-          }
+          // if (astItem.type === 'emphasis') {
+          //   return <em>{render(astItem.children)}</em>
+          // }
 
-          if (astItem.type === 'thematicBreak') {
-            return <hr />
-          }
-          if (astItem.type === 'inlineMath') {
-            return <KatexRender type="inline" content={astItem.value} />
-          }
-          if (astItem.type === 'math') {
-            return <KatexRender type="block" content={astItem.value} />
-          }
+          // if (astItem.type === 'image') {
+          //   return <img src={astItem.url} />
+          // }
 
-          if (astItem.type === 'text') {
-            return astItem.value || ''
-          }
+          // if (astItem.type === 'link') {
+          //   return (
+          //     <a
+          //       title={astItem.title || ''}
+          //       href={astItem.url}
+          //     >
+          //       {render(astItem.children)}
+          //     </a>
+          //   )
+          // }
 
-          if (astItem.type === 'html') {
-            if (!htmlRender) return null
-            // const matchName = astItem.value.match(/<([a-z0-9]+)/i)?.[1] || ''
-            return <div v-html={DOMPurify.sanitize(astItem.value)} />
-          }
+          // if (astItem.type === 'blockquote-alter') {
+          //   const alterState = alterStateMap[astItem.alter]
+          //   if (!alterState) return null
+          //   return (
+          //     <div class={[ghStyles['markdown-alert'], alterState.class]}>
+          //       <p class={ghStyles['markdown-alert-title']}>
+          //         {h(alterState.icon, {
+          //           class: ['mr-2'],
+          //         })}
+          //         {astItem.alter.toUpperCase()}
+          //       </p>
+          //       {render(astItem.children)}
+          //     </div>
+          //   )
+          // }
 
-          if (astItem.type === 'footnoteReference') {
-            return (
-              <Popover
-                v-slots={{
-                  content: () => {
-                    const list = footnoteList.value[astItem.identifier]
-                    return render(list)
-                  },
-                }}
-              >
-                <sup>
-                  <Button size="small" color="primary" variant="link">
-                    [
-                    {astItem.label}
-                    ]
-                  </Button>
-                </sup>
-              </Popover>
-            )
-          }
+          // if (astItem.type === 'blockquote') {
+          //   return (
+          //     <blockquote>
+          //       {render(astItem.children)}
+          //     </blockquote>
+          //   )
+          // }
+
+          // if (astItem.type === 'table') {
+          //   const thead = astItem.children?.[0]?.children?.map((cell) => {
+          //     return <th>{render(cell.children)}</th>
+          //   })
+
+          //   const tbody = drop(astItem.children, 1).map((row) => {
+          //     return (
+          //       <tr>
+          //         {render(row.children)}
+          //       </tr>
+          //     )
+          //   })
+
+          //   return (
+          //     <table>
+          //       <thead>
+          //         <tr>{thead}</tr>
+          //       </thead>
+          //       <tbody>{tbody}</tbody>
+          //     </table>
+          //   )
+          // }
+
+          // if (astItem.type === 'tableCell') {
+          //   return <td>{render(astItem.children)}</td>
+          // }
+
+          // if (astItem.type === 'thematicBreak') {
+          //   return <hr />
+          // }
+          // if (astItem.type === 'inlineMath') {
+          //   return <KatexRender type="inline" content={astItem.value} />
+          // }
+          // if (astItem.type === 'math') {
+          //   return <KatexRender type="block" content={astItem.value} />
+          // }
+
+          // if (astItem.type === 'text') {
+          //   return astItem.value || ''
+          // }
+
+          // if (astItem.type === 'html') {
+          //   if (!htmlRender) return null
+          //   // const matchName = astItem.value.match(/<([a-z0-9]+)/i)?.[1] || ''
+          //   return <div v-html={DOMPurify.sanitize(astItem.value)} />
+          // }
+
+          // if (astItem.type === 'footnoteReference') {
+          //   return (
+          //     <Popover
+          //       v-slots={{
+          //         content: () => {
+          //           const list = footnoteList.value[astItem.identifier]
+          //           return render(list)
+          //         },
+          //       }}
+          //     >
+          //       <sup>
+          //         <Button size="small" color="primary" variant="link">
+          //           [
+          //           {astItem.label}
+          //           ]
+          //         </Button>
+          //       </sup>
+          //     </Popover>
+          //   )
+          // }
 
           // console.warn('>>', astItem)
 
@@ -366,22 +407,6 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
   }
 
   return () => {
-    if (!mdAst.value) return null
-    const astRender = toJsxRuntime(mdAst.value, {
-      Fragment,
-      jsx,
-      jsxs: jsx,
-      elementAttributeNameCase: 'html',
-      components: {
-        code: (props) => {
-          const { children, className, node, ...rest } = props
-          console.log('>>', children)
-
-          return <div>code</div>
-        },
-      },
-    })
-
     return (
       <div
         class={cn(
@@ -391,8 +416,7 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
           props.class,
         )}
       >
-        {/* {render(mdAst.value)} */}
-        {astRender}
+        {render(hAst.value)}
       </div>
     )
   }

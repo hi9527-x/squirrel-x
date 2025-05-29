@@ -14,9 +14,6 @@ importers:
       '@tanstack/vue-query':
         specifier: ^5.74.5
         version: 5.77.0(vue@3.5.14(typescript@5.8.3))
-      '@types/hast':
-        specifier: ^3.0.4
-        version: 3.0.4
       '@unocss/reset':
         specifier: ^66.1.2
         version: 66.1.2
@@ -129,6 +126,9 @@ importers:
       '@tsconfig/node22':
         specifier: ^22.0.1
         version: 22.0.2
+      '@types/hast':
+        specifier: ^3.0.4
+        version: 3.0.4
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9

@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import remarkParse from 'remark-parse'
 import remarkRehype from 'remark-rehype'
-import { Markdown } from 'squirrel-x'
+import { Markdown, Mermaid } from 'squirrel-x'
 import { unified } from 'unified'
 import type { SlotsType, VNode } from 'vue'
 import { defineComponent, Fragment, h } from 'vue'
@@ -23,7 +23,16 @@ const Test = defineComponent<Props, Emits, string, Slots>((props, ctx) => {
   return () => {
     return (
       <div class="p4">
-        <Markdown content={content} />
+        <Markdown
+          content={content}
+          v-slots={{
+            code: ({ code, language }) => {
+              if (language === 'mermaid') {
+                return <Mermaid code={code} />
+              }
+            },
+          }}
+        />
       </div>
     )
   }
