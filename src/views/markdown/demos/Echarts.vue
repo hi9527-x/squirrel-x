@@ -12,10 +12,11 @@ const props = defineProps<{ markdown: string }>()
     <Markdown
       :content="props.markdown"
     >
-      <template #customRender="{ ast }">
-        <div v-if="ast.type === 'code' && ast.lang === 'x-echarts'">
-          <EchartsTest :code="ast.value" />
-        </div>
+      <template #codeBlock="{ language, code }">
+        <EchartsTest
+          v-if="language === 'x-echarts'"
+          :code="code"
+        />
       </template>
     </Markdown>
   </div>

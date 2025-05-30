@@ -2,13 +2,14 @@ import { watchDebounced } from '@vueuse/core'
 import clsx from 'clsx'
 import DOMPurify from 'dompurify'
 import { drop, isBoolean } from 'es-toolkit'
-// import type { FootnoteDefinition, Root, RootContent } from 'mdast'
-import type { Root, RootContent } from 'hast'
+import type { Element as HElement, Root, RootContent } from 'hast'
+import type { FootnoteDefinition as MdFootnoteDefinition, Root as MdRoot, RootContent as MdRootContent } from 'mdast'
 import rehypeRaw from 'rehype-raw'
 import remarkGemoji from 'remark-gemoji'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import remarkParse from 'remark-parse'
+import type { Options as HstOptions } from 'remark-rehype'
 import remarkRehype from 'remark-rehype'
 import type { CodeProps } from 'squirrel-x'
 import { Button, Code, Popover } from 'squirrel-x'
@@ -67,57 +68,73 @@ const alterStateMap: Record<AlterKey, { icon: VNode, class: string }> = {
   },
 }
 
-const alterStateReg = new RegExp(`^\\[!(${Object.keys(alterStateMap).join('|')})\\]\n?`, 'i')
+const alterStateReg = new RegExp(`^\\[!(${alterKeys.join('|')})\\]\n?`, 'i')
 
 type HAstContent = RootContent | RootContent[]
 export type MdRenderSlots = SlotsType<{
-  customRender?: (params: { ast: RootContent, childrenRender: (ast: HAstContent) => VNode }) => VNode[]
-  code?: (params: { language: string, code: string }) => VNode[]
+  customRender?: (params: { ast: HElement, childrenRender: (ast: HAstContent) => VNode }) => VNode[]
+  codeBlock?: (params: { language: string, code: string }) => VNode[]
 }>
 
 export type MdRenderProps = {
   content?: string
-  htmlRender?: boolean
+  allowDangerousHtml?: boolean
   class?: string
   codeProps?: Omit<CodeProps, 'code' | 'language'>
 }
 
 export type MdRenderEmits = {}
 
-const processor = unified()
-  .use(remarkParse)
-  // .use(() => {
-  //   return (tree: Root) => {
-  //     visit(tree, 'blockquote', (node, index, parent) => {
-  //       const children = node.children
-  //       const firstNode = children[0]
-
-//       if (firstNode?.type === 'paragraph' && firstNode.children?.[0]?.type === 'text') {
-//         const firstTextNode = firstNode.children?.[0]
-//         if (!firstTextNode || !firstTextNode.value) return
-
-  //         const match = firstTextNode.value.match(alterStateReg)
-  //         if (match?.[1]) {
-  //           firstTextNode.value = firstTextNode.value.replace(match[0], '')
-  //           // @ts-expect-error 允许修改
-  //           node.type = 'blockquote-alter'
-  //           // @ts-expect-error 允许修改
-  //           node.alter = match[1].toLowerCase()
-  //         }
-  //       }
-  //     })
-  //   }
-  // })
-  .use(remarkGemoji)
-  .use(remarkGfm)
-  .use(remarkMath)
-  .use(remarkRehype, { allowDangerousHtml: true })
-  .use(rehypeRaw)
+const mdast2hast: HstOptions['handlers'] = {
+  'blockquote-alter': (state, node, parent) => {
+    return {
+      type: 'element',
+      tagName: 'sx-alter',
+      children: state.all(node),
+      properties: {
+        alter: node.alter,
+      },
+    }
+  },
+}
 
 const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderSlots>((props, ctx) => {
   const hAst = shallowRef<RootContent[]>([])
   const loading = shallowRef(false)
   // const footnoteList = ref<Record<string, FootnoteDefinition['children']>>({})
+
+  const processor = unified()
+    .use(remarkParse)
+    .use(() => {
+      return (tree: MdRoot) => {
+        visit(tree, 'blockquote', (node, index, parent) => {
+          const children = node.children
+          const firstNode = children[0]
+
+          if (firstNode?.type === 'paragraph' && firstNode.children?.[0]?.type === 'text') {
+            const firstTextNode = firstNode.children?.[0]
+            if (!firstTextNode || !firstTextNode.value) return
+
+            const match = firstTextNode.value.match(alterStateReg)
+            if (match?.[1]) {
+              firstTextNode.value = firstTextNode.value.replace(match[0], '')
+              // @ts-expect-error 允许修改
+              node.type = 'blockquote-alter'
+              // @ts-expect-error 允许修改
+              node.alter = match[1].toLowerCase()
+            }
+          }
+        })
+      }
+    })
+    .use(remarkGemoji)
+    .use(remarkGfm)
+    .use(remarkMath)
+    .use(remarkRehype, {
+      allowDangerousHtml: !!props.allowDangerousHtml,
+      handlers: mdast2hast,
+    })
+    .use(rehypeRaw)
 
   const parseMdText2Ast = async () => {
     try {
@@ -159,22 +176,21 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
   const render = (ast: HAstContent): VNode => {
     const currentAst = Array.isArray(ast) ? ast : [ast]
 
-    const htmlRender = !!props.htmlRender
     return (
       <>
         {currentAst.map((astIt) => {
-          const slotCustomRender = ctx.slots.customRender?.({ ast: astIt, childrenRender: render })
-
-          const customRenderArr = slotCustomRender?.filter(ele => !isEmptyElement(ele))?.map((ele: any) => h(ele)) ?? []
-
-          if (customRenderArr.length) return customRenderArr
-
           if (astIt.type === 'element') {
+            const slotCustomRender = ctx.slots.customRender?.({ ast: astIt, childrenRender: render })
+
+            const customRenderArr = slotCustomRender?.filter(ele => !isEmptyElement(ele))?.map((ele: any) => h(ele)) ?? []
+
+            if (customRenderArr.length) return customRenderArr
             const tagName = astIt.tagName
             if (tagName === 'pre') {
               const first = astIt.children[0].type === 'element' ? astIt.children[0] : null
               if (first) {
                 const classNames = first.properties.className
+
                 if (Array.isArray(classNames) && classNames.length) {
                   let lang = ''
                   let code = ''
@@ -186,9 +202,10 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
                       break
                     }
                   }
+
                   if (lang) {
                     code = first.children[0].type === 'text' ? first.children[0].value : ''
-                    const codeSlots = ctx.slots.code?.({ language: lang, code })
+                    const codeSlots = ctx.slots.codeBlock?.({ language: lang, code })
                     const codeSlotsArr = codeSlots?.filter(ele => !isEmptyElement(ele))?.map((ele: any) => h(ele)) ?? []
                     if (codeSlotsArr.length) return codeSlotsArr
                     return (
@@ -202,203 +219,41 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
                 }
               }
             }
-            return h(astIt.tagName, { ...astIt.properties }, render(astIt.children))
+
+            if (tagName === 'sx-alter') {
+              const alterName = astIt.properties.alter
+              if (typeof alterName !== 'string' || !alterName) return null
+
+              const alterState = alterStateMap[alterName as AlterKey]
+              if (!alterState) return null
+
+              return (
+                <div class={[ghStyles['markdown-alert'], alterState.class]}>
+                  <p class={ghStyles['markdown-alert-title']}>
+                    {h(alterState.icon, {
+                      class: ['mr-2'],
+                    })}
+                    {alterName.toUpperCase()}
+                  </p>
+                  {render(astIt.children)}
+                </div>
+              )
+            }
+
+            const oldClassName = astIt.properties.className
+
+            const className = Array.isArray(oldClassName)
+              ? oldClassName.map((cls) => {
+                  return ghStyles[cls]
+                })
+              : []
+
+            return h(astIt.tagName, { ...astIt.properties, class: className }, render(astIt.children))
           }
 
           if (astIt.type === 'text') {
             return astIt.value
           }
-
-          // if (astItem.type === 'paragraph') {
-          //   return <p>{render(astItem.children)}</p>
-          // }
-
-          // if (astItem.type === 'heading') {
-          //   const depth = astItem.depth ?? 6
-          //   return h(`h${depth}`, {}, render(astItem.children))
-          // }
-
-          // if (astItem.type === 'code') {
-          //   if (!astItem.lang) return null
-
-          //   return (
-          //     <Code
-          //       code={astItem.value ?? ''}
-          //       language={astItem.lang ?? ''}
-          //       {...props.codeProps}
-          //     />
-          //   )
-          // }
-
-          // if (astItem.type === 'list') {
-          //   if (astItem.ordered) {
-          //     return (
-          //       <ol>
-          //         {render(astItem.children)}
-          //       </ol>
-          //     )
-          //   }
-
-          //   const isTaskNode = isBoolean(astItem.children?.[0]?.checked)
-          //   return (
-          //     <ul
-          //       class={clsx(isTaskNode ? ghStyles['contains-task-list'] : '')}
-          //     >
-          //       {render(astItem.children)}
-          //     </ul>
-          //   )
-          // }
-
-          // if (astItem.type === 'listItem') {
-          //   const isTaskNode = isBoolean(astItem.checked)
-          //   const node: RootContent[] = []
-          //   astItem.children.forEach((it) => {
-          //     if (it.type === 'paragraph') {
-          //       node.push(...it.children)
-          //     }
-          //   })
-          //   return (
-          //     <li
-          //       class={clsx(isTaskNode ? ghStyles['task-list-item'] : '')}
-          //     >
-          //       {isTaskNode && (
-          //         <input
-          //           type="checkbox"
-          //           class={ghStyles['task-list-item-checkbox']}
-          //           checked={!!astItem.checked}
-          //           disabled
-          //         />
-          //       )}
-          //       {render(isTaskNode ? node : astItem.children)}
-          //     </li>
-          //   )
-          // }
-
-          // if (astItem.type === 'inlineCode') {
-          //   return <code>{astItem.value}</code>
-          // }
-
-          // if (astItem.type === 'strong') {
-          //   return <strong>{render(astItem.children)}</strong>
-          // }
-          // if (astItem.type === 'delete') {
-          //   return (
-          //     <del>{render(astItem.children)}</del>
-          //   )
-          // }
-
-          // if (astItem.type === 'emphasis') {
-          //   return <em>{render(astItem.children)}</em>
-          // }
-
-          // if (astItem.type === 'image') {
-          //   return <img src={astItem.url} />
-          // }
-
-          // if (astItem.type === 'link') {
-          //   return (
-          //     <a
-          //       title={astItem.title || ''}
-          //       href={astItem.url}
-          //     >
-          //       {render(astItem.children)}
-          //     </a>
-          //   )
-          // }
-
-          // if (astItem.type === 'blockquote-alter') {
-          //   const alterState = alterStateMap[astItem.alter]
-          //   if (!alterState) return null
-          //   return (
-          //     <div class={[ghStyles['markdown-alert'], alterState.class]}>
-          //       <p class={ghStyles['markdown-alert-title']}>
-          //         {h(alterState.icon, {
-          //           class: ['mr-2'],
-          //         })}
-          //         {astItem.alter.toUpperCase()}
-          //       </p>
-          //       {render(astItem.children)}
-          //     </div>
-          //   )
-          // }
-
-          // if (astItem.type === 'blockquote') {
-          //   return (
-          //     <blockquote>
-          //       {render(astItem.children)}
-          //     </blockquote>
-          //   )
-          // }
-
-          // if (astItem.type === 'table') {
-          //   const thead = astItem.children?.[0]?.children?.map((cell) => {
-          //     return <th>{render(cell.children)}</th>
-          //   })
-
-          //   const tbody = drop(astItem.children, 1).map((row) => {
-          //     return (
-          //       <tr>
-          //         {render(row.children)}
-          //       </tr>
-          //     )
-          //   })
-
-          //   return (
-          //     <table>
-          //       <thead>
-          //         <tr>{thead}</tr>
-          //       </thead>
-          //       <tbody>{tbody}</tbody>
-          //     </table>
-          //   )
-          // }
-
-          // if (astItem.type === 'tableCell') {
-          //   return <td>{render(astItem.children)}</td>
-          // }
-
-          // if (astItem.type === 'thematicBreak') {
-          //   return <hr />
-          // }
-          // if (astItem.type === 'inlineMath') {
-          //   return <KatexRender type="inline" content={astItem.value} />
-          // }
-          // if (astItem.type === 'math') {
-          //   return <KatexRender type="block" content={astItem.value} />
-          // }
-
-          // if (astItem.type === 'text') {
-          //   return astItem.value || ''
-          // }
-
-          // if (astItem.type === 'html') {
-          //   if (!htmlRender) return null
-          //   // const matchName = astItem.value.match(/<([a-z0-9]+)/i)?.[1] || ''
-          //   return <div v-html={DOMPurify.sanitize(astItem.value)} />
-          // }
-
-          // if (astItem.type === 'footnoteReference') {
-          //   return (
-          //     <Popover
-          //       v-slots={{
-          //         content: () => {
-          //           const list = footnoteList.value[astItem.identifier]
-          //           return render(list)
-          //         },
-          //       }}
-          //     >
-          //       <sup>
-          //         <Button size="small" color="primary" variant="link">
-          //           [
-          //           {astItem.label}
-          //           ]
-          //         </Button>
-          //       </sup>
-          //     </Popover>
-          //   )
-          // }
-
-          // console.warn('>>', astItem)
 
           return null
         })}
@@ -421,7 +276,7 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
     )
   }
 }, {
-  props: ['content', 'htmlRender', 'class', 'codeProps'],
+  props: ['content', 'allowDangerousHtml', 'class', 'codeProps'],
 })
 
 export default MDRender

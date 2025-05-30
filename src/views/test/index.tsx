@@ -24,6 +24,7 @@ const Test = defineComponent<Props, Emits, string, Slots>((props, ctx) => {
     return (
       <div class="p4">
         <Markdown
+          allowDangerousHtml
           content={content}
           v-slots={{
             code: ({ code, language }) => {

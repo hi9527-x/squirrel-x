@@ -113,7 +113,7 @@ const router = createRouter({
                 title: 'test',
 
               },
-              component: () => import('@/views/test'),
+              component: () => import('@/views/test/index.vue'),
             },
           ],
         }]
