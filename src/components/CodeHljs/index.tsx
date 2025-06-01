@@ -48,6 +48,14 @@ export const languages = [
   'csharp',
 ] as const
 
+type Language = typeof languages[number]
+
+const languageMap: Record<string, Language> = {
+  md: 'markdown',
+  js: 'javascript',
+  ts: 'typescript',
+}
+
 hljs.registerLanguage('vue', (hljs) => {
   return {
     subLanguage: 'xml',
@@ -144,8 +152,6 @@ const DEFAULT_TOOLBAR_CONFIG = {
 
 type ToolbarConfig = Partial<typeof DEFAULT_TOOLBAR_CONFIG>
 
-type Language = typeof languages[number]
-
 export type CodeProps = {
   code?: string
   language?: string
@@ -187,7 +193,8 @@ const CodeRender = defineComponent<CodeProps, CodeEmits, string, CodeSlots>((pro
 
   watch(() => props.language, (lang, oldLang) => {
     if (lang && lang !== oldLang) {
-      language.value = languages.includes(lang as Language) ? lang : 'plaintext'
+      const langNext = languageMap[lang] ?? lang
+      language.value = languages.includes(langNext as Language) ? langNext : 'plaintext'
     }
   }, {
     immediate: true,
@@ -232,103 +239,106 @@ const CodeRender = defineComponent<CodeProps, CodeEmits, string, CodeSlots>((pro
     }
 
     return (
-      <div
-        class={cn(
-          'py-1 px-4 bg-[--bgColor-muted] rounded-md',
-          isFullscreen.value ? 'bg-white' : '',
-          props.class,
-        )}
-        ref={elCode}
-      >
-        {toolbarEnable && (
-          <div
-            class={[
-              'flex justify-between',
-            ]}
-          >
-            <div>
+      <div>
+        <div
+          class={cn(
+            'py-1 px-4 bg-[--bgColor-muted] rounded-md',
+            'inline-block',
+            isFullscreen.value ? 'bg-white' : '',
+            props.class,
+          )}
+          ref={elCode}
+        >
+          {toolbarEnable && (
+            <div
+              class={[
+                'flex justify-between',
+              ]}
+            >
+              <div>
 
-              {toolbarConfig.language && (
-                <Select
-                  class=""
-                  bordered={false}
-                  options={languages.map((it) => {
-                    return { label: it, value: it }
-                  })}
-                  size="small"
-                  value={language.value}
-                  onChange={(val) => {
-                    if (typeof val === 'string') {
-                      language.value = val
-                    }
-                  }}
-                />
-              )}
+                {toolbarConfig.language && (
+                  <Select
+                    class=""
+                    bordered={false}
+                    options={languages.map((it) => {
+                      return { label: it, value: it }
+                    })}
+                    size="small"
+                    value={language.value}
+                    onChange={(val) => {
+                      if (typeof val === 'string') {
+                        language.value = val
+                      }
+                    }}
+                  />
+                )}
+              </div>
+
+              <div>
+                {toolbarConfig.lineNum && (
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={() => { showLineNum.value = !showLineNum.value }}
+                  >
+                    {showLineNum.value
+                      ? (
+                          <IconToggleLeft
+                            class={cn(
+                              'c-[--fgColor-muted]',
+                            )}
+                          />
+                        )
+                      : (
+                          <IconToggleRight
+                            class={cn(
+                              'c-[--fgColor-muted]',
+                            )}
+                          />
+                        )}
+                  </Button>
+                )}
+
+                {toolbarConfig.fullScreen && (
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={() => { toggle() }}
+                  >
+                    <IconExpand class="c-[--fgColor-muted]" />
+                  </Button>
+                )}
+
+                {(toolbarConfig.copy && isSupported.value) && (
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={() => { copy(props.code || '') }}
+                  >
+                    {copied.value
+                      ? (
+                          <IconCheck
+                            class={cn(
+                              'c-[--fgColor-muted]',
+                            )}
+                          />
+                        )
+                      : (
+                          <IconCopy
+                            class={cn(
+                              'c-[--fgColor-muted]',
+                            )}
+                          />
+                        )}
+                  </Button>
+                )}
+
+              </div>
             </div>
-
-            <div>
-              {toolbarConfig.lineNum && (
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => { showLineNum.value = !showLineNum.value }}
-                >
-                  {showLineNum.value
-                    ? (
-                        <IconToggleLeft
-                          class={cn(
-                            'c-[--fgColor-muted]',
-                          )}
-                        />
-                      )
-                    : (
-                        <IconToggleRight
-                          class={cn(
-                            'c-[--fgColor-muted]',
-                          )}
-                        />
-                      )}
-                </Button>
-              )}
-
-              {toolbarConfig.fullScreen && (
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => { toggle() }}
-                >
-                  <IconExpand class="c-[--fgColor-muted]" />
-                </Button>
-              )}
-
-              {(toolbarConfig.copy && isSupported.value) && (
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => { copy(props.code || '') }}
-                >
-                  {copied.value
-                    ? (
-                        <IconCheck
-                          class={cn(
-                            'c-[--fgColor-muted]',
-                          )}
-                        />
-                      )
-                    : (
-                        <IconCopy
-                          class={cn(
-                            'c-[--fgColor-muted]',
-                          )}
-                        />
-                      )}
-                </Button>
-              )}
-
-            </div>
-          </div>
-        )}
-        {codePre}
+          )}
+          {codePre}
+        </div>
       </div>
     )
   }

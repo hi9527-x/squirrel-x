@@ -1,9 +1,6 @@
-import { isString } from 'es-toolkit'
-import rehypeParse from 'rehype-parse'
 import { Code, Tabs } from 'squirrel-x'
-import { unified } from 'unified'
 import type { SlotsType, VNode } from 'vue'
-import { defineComponent, h, onMounted, ref } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 
 import { cn } from '@/utils'
 
@@ -16,45 +13,26 @@ type Slots = SlotsType<{
 type Emits = {}
 
 type Props = {
-  html?: string
+  src: string
+  markdown?: string
+  showcode?: string
 }
 
 const CodeDemo = defineComponent<Props, Emits, string, Slots>((props, ctx) => {
-  const demoPath = ref('')
-  const markdownContent = ref('')
-  const showCode = ref('')
-  onMounted(async () => {
-    const ast = unified()
-      .use(rehypeParse, { fragment: true })
-      .parse(props.html || '')
-
-    const codeDom = ast.children?.[0]
-
-    if (codeDom.type === 'element' && codeDom.tagName === 'code') {
-      demoPath.value = isString(codeDom.properties.src) ? codeDom.properties.src : ''
-
-      if (isString(codeDom.properties.markdown) && modulesCode[codeDom.properties.markdown]) {
-        markdownContent.value = modulesCode[codeDom.properties.markdown]
-      }
-
-      showCode.value = isString(codeDom.properties.showcode) ? codeDom.properties.showcode : ''
-    }
-  })
-
   const tabKey = ref('preview')
 
   return () => {
-    const component = modules[demoPath.value]
+    const component = modules[props.src]
     if (!component) return null
-
-    const tabCodeList = showCode.value.split(',').filter((name) => {
+    const markdownContent = modulesCode[props.markdown ?? ''] || ''
+    const tabCodeList = props.showcode?.split(',').filter((name) => {
       return modulesCode[`./demos/${name}`]
     }).map((name) => {
       return {
         label: name,
         value: name,
       }
-    })
+    }) ?? []
     return (
       <div
         class={[
@@ -68,21 +46,21 @@ const CodeDemo = defineComponent<Props, Emits, string, Slots>((props, ctx) => {
           items={[
             { label: '预览', value: 'preview' },
             { label: '代码', value: 'code' },
-            ...markdownContent.value ? [{ label: 'markdown', value: 'markdown' }] : [],
+            ...markdownContent ? [{ label: 'markdown', value: 'markdown' }] : [],
             ...tabCodeList,
 
           ]}
         />
         <div class="p-2">
           <div class={cn(tabKey.value === 'preview' ? 'block' : 'hidden')}>
-            {component && h(component, { markdown: markdownContent.value })}
+            {component && h(component, { markdown: markdownContent })}
           </div>
 
           <div class={cn(tabKey.value === 'markdown' ? 'block' : 'hidden')}>
             <Code
               toolbar={true}
               showLineNum={false}
-              code={markdownContent.value || ''}
+              code={markdownContent || ''}
               language="markdown"
             />
           </div>
@@ -91,7 +69,7 @@ const CodeDemo = defineComponent<Props, Emits, string, Slots>((props, ctx) => {
             <Code
               toolbar={true}
               showLineNum={false}
-              code={modulesCode[`./demos/${tabKey.value}`] || modulesCode[demoPath.value] || ''}
+              code={modulesCode[`./demos/${tabKey.value}`] || modulesCode[props.src] || ''}
               language="vue"
             />
           </div>
@@ -101,7 +79,7 @@ const CodeDemo = defineComponent<Props, Emits, string, Slots>((props, ctx) => {
     )
   }
 }, {
-  props: ['html'],
+  props: ['src', 'markdown', 'showcode'],
 })
 
 export default CodeDemo

@@ -5,7 +5,6 @@ import IconArrowOutUpRight from '~icons/lucide/square-arrow-out-up-right'
 
 const content = `
 [百度](https://baidu.com)
-![](/img/PCtm_d9c8750bed0b3c7d089fa7d55720d6cf.png)
 `
 </script>
 
@@ -15,7 +14,7 @@ const content = `
   >
     <template #customRender="{ ast, childrenRender }">
       <Popover
-        v-if="ast.type === 'link'"
+        v-if="ast.tagName === 'a'"
         trigger="click"
         placement="bottom-start"
       >
@@ -24,7 +23,7 @@ const content = `
             <span>即将跳转到外部网站</span>
             <a
               target="_blank"
-              :href="ast.url"
+              :href="ast.properties.href as string"
             >
               <Button variant="link">
                 <IconArrowOutUpRight />
@@ -40,14 +39,6 @@ const content = `
           <component :is="childrenRender(ast.children)" />
         </Button>
       </Popover>
-
-      <div
-        v-else-if="ast.type === 'image'"
-      >
-        <img
-          :src="`https://baidu.com/${ast.url}`"
-        >
-      </div>
     </template>
   </Markdown>
 </template>

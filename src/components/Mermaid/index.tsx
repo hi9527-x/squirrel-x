@@ -1,18 +1,21 @@
 import { createGlobalState, watchDebounced } from '@vueuse/core'
 import { debounce } from 'es-toolkit'
+import { findLastIndex } from 'es-toolkit/compat'
 import { createMermaidRenderer } from 'mermaid-isomorphic'
 import { Empty } from 'squirrel-x'
 import type { SlotsType } from 'vue'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
 
-type ChartResult = { code: string } & ({
-  state: 'loading'
-} | {
+type ChartResultSuccess = {
   state: 'success'
   svg: string
   width: number
   height: number
-} | {
+}
+
+type ChartResult = { code: string } & ({
+  state: 'loading'
+} | ChartResultSuccess | {
   state: 'error'
 })
 
@@ -20,6 +23,7 @@ const midRender = createMermaidRenderer()
 
 const useChartStore = createGlobalState(() => {
   const code2svg = ref<Record<string, ChartResult>>({})
+
   const generateLoading = ref(false)
 
   const generateSvg = debounce(async () => {
@@ -80,8 +84,14 @@ export type MermaidProps = {
   code?: string
 }
 
-const Mermaid = defineComponent<MermaidProps, MermaidEmits, string, MermaidSlots>((props) => {
+const Mermaid = defineComponent<
+  MermaidProps,
+  MermaidEmits,
+  string,
+  MermaidSlots
+>((props) => {
   const chartStore = useChartStore()
+  const chart = ref<ChartResult | null>(null)
 
   watchDebounced(() => props.code, (code) => {
     if (code) {
@@ -90,37 +100,25 @@ const Mermaid = defineComponent<MermaidProps, MermaidEmits, string, MermaidSlots
   }, {
     immediate: true,
     debounce: 100,
-    maxWait: 200,
+    maxWait: 120,
   })
 
-  const render = () => {
-    try {
-      if (!props.code) return <Empty description="生成中，请稍后" />
-      const code2svg = chartStore.code2svg.value[props.code]
-      if (!code2svg) return <Empty description="生成中，请稍后" />
-      if (code2svg.state === 'loading') return <Empty description="生成中，请稍后" />
-      if (code2svg.state === 'error') return <Empty description="生成失败" />
-      if (code2svg.state === 'success' && code2svg.svg) {
-        return (
-          <div class="overflow-x-auto py-4">
-            <div style={`width: ${code2svg.width}px; height: ${code2svg.height}px`} v-html={code2svg.svg} />
-          </div>
-        )
-      }
-
-      return <Empty description="生成失败" />
+  watch([chartStore.code2svg, () => props.code], ([code2svg, code]) => {
+    if (!code) return
+    const result = code2svg[code]
+    if (result?.state === 'success') {
+      chart.value = result
     }
-    catch (error) {
-      return <Empty description={error instanceof Error ? error.message : '生成失败'} />
-    }
-  }
+  }, {
+    immediate: true,
+    deep: true
+  })
 
   return () => {
-    return (
-      <div>
-        {render()}
-      </div>
-    )
+    if (chart.value?.state === 'success') return <div class="overflow-x-auto py-4">
+      <div style={`width: ${chart.value.width}px; height: ${chart.value.height}px`} v-html={chart.value.svg} />
+    </div>
+    return <Empty description="生成中，请稍后" />
   }
 }, {
   props: ['code'],

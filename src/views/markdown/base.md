@@ -6,34 +6,26 @@
 
 ## 代码演示
 
-<code src="./demos/HelloWorld.vue" />
+<sx-code src="./demos/HelloWorld.vue" showCode="./demos/HelloWorld.vue"></sx-code>
 
 ## markdown语法自定义组件渲染
 
 例如因**安全**需要，
 
 - **链接**不能直接跳转，需要做一个中间弹窗，进行免责提醒
-- **图片**等静态资源，需要添加安全参数，或者域名才能正常访问
 
-<code src="./demos/CustomLink.vue" />
+<sx-code src="./demos/CustomLink.vue" showCode="./demos/CustomLink.vue" ></sx-code>
 
 ## markdown自定义echarts渲染
 
-<code
-  src="./demos/Echarts.vue"
-  markdown="./demos/echarts.md"
-  showCode="EchartsTest.vue"
-/>
+<sx-code src="./demos/Echarts.vue" showCode="./demos/echarts.md,./demos/EchartsTest.vue" > </sx-code>
 
 ## Mermaid渲染图表
 
-<code
-  src="./demos/Mermaid.vue"
-  markdown="./demos/mermaid.md"
-/>
+<sx-code src="./demos/Mermaid.vue" showCode="./demos/mermaid.md" ></sx-code>
 
 ## 流式预览
 
 支持的markdown语法，通过聊天窗方式流式输入
 
-<code src="./demos/Stream.vue" markdown="./demos/base.md" />
+<sx-code src="./demos/Stream.vue" showCode="./demos/base.md" ></sx-code>

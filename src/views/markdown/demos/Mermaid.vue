@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { Markdown, Mermaid } from 'squirrel-x'
-import { defineProps } from 'vue'
 
-const props = defineProps<{ markdown: string }>()
+import markdown from './mermaid.md?raw'
 </script>
 
 <template>
-  <Markdown :content="props.markdown">
-    <template #customRender="{ ast }">
-      <div v-if="ast.type === 'code' && ast.lang === 'mermaid'">
-        <Mermaid :code="ast.value" />
+  <Markdown :content="markdown">
+    <template #codeBlock="{ code, language }">
+      <div v-if="language === 'mermaid'">
+        <Mermaid :code="code" />
       </div>
     </template>
   </Markdown>

@@ -1,18 +1,20 @@
 import { watchDebounced } from '@vueuse/core'
-import clsx from 'clsx'
-import DOMPurify from 'dompurify'
-import { drop, isBoolean } from 'es-toolkit'
-import type { FootnoteDefinition, Root, RootContent } from 'mdast'
+import { pick } from 'es-toolkit'
+import type { FootnoteDefinition as MdFootnoteDefinition, Root as MdRoot, RootContent as MdRootContent } from 'mdast'
+import rehypeRaw from 'rehype-raw'
 import remarkGemoji from 'remark-gemoji'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import remarkParse from 'remark-parse'
-import type { CodeProps } from 'squirrel-x'
-import { Button, Code, Popover } from 'squirrel-x'
+import type { Options as RemarkRehypeOptions } from 'remark-rehype'
+import remarkRehype from 'remark-rehype'
+import type { CodeProps, HElement, HRoot, HRootContent } from 'squirrel-x'
+import { Code } from 'squirrel-x'
+import type { PluggableList } from 'unified'
 import { unified } from 'unified'
 import { visit } from 'unist-util-visit'
 import type { SlotsType, VNode } from 'vue'
-import { defineComponent, h, ref, shallowRef } from 'vue'
+import { defineComponent, h, ref, shallowRef, watch } from 'vue'
 
 import { cn, isEmptyElement } from '@/utils'
 import IconCircleAlert from '~icons/lucide/circle-alert'
@@ -21,7 +23,6 @@ import IconLightbulb from '~icons/lucide/lightbulb'
 import IconMessageSquareWarning from '~icons/lucide/message-square-warning'
 import IconTriangleAlert from '~icons/lucide/triangle-alert'
 
-import KatexRender from './KatexRender'
 import ghStyles from './styles/github.module.css'
 import styles from './styles/index.module.less'
 
@@ -63,54 +64,101 @@ const alterStateMap: Record<AlterKey, { icon: VNode, class: string }> = {
   },
 }
 
-const alterStateReg = new RegExp(`^\\[!(${Object.keys(alterStateMap).join('|')})\\]\n?`, 'i')
+const alterStateReg = new RegExp(`^\\[!(${alterKeys.join('|')})\\]\n?`, 'i')
+type CodeDisplay = 'block' | 'inline'
 
-type MDAstContent = RootContent | RootContent[]
+type HAstContent = HRootContent | HRootContent[]
 export type MdRenderSlots = SlotsType<{
-  customRender?: (params: { ast: RootContent, childrenRender: (ast: MDAstContent) => VNode }) => VNode[]
+  customRender?: (params: { ast: HElement, childrenRender: (ast: HAstContent) => VNode }) => VNode[]
+  codeBlock?: (params: { language: string, code: string, display: CodeDisplay }) => VNode[]
 }>
 
 export type MdRenderProps = {
   content?: string
-  htmlRender?: boolean
+  allowDangerousHtml?: boolean
   class?: string
   codeProps?: Omit<CodeProps, 'code' | 'language'>
 }
 
 export type MdRenderEmits = {}
 
-const processor = unified()
-  .use(remarkParse)
-  .use(() => {
-    return (tree: Root) => {
-      visit(tree, 'blockquote', (node, index, parent) => {
-        const children = node.children
-        const firstNode = children[0]
-
-        if (firstNode?.type === 'paragraph' && firstNode.children?.[0]?.type === 'text') {
-          const firstTextNode = firstNode.children?.[0]
-          if (!firstTextNode || !firstTextNode.value) return
-
-          const match = firstTextNode.value.match(alterStateReg)
-          if (match?.[1]) {
-            firstTextNode.value = firstTextNode.value.replace(match[0], '')
-            // @ts-expect-error 允许修改
-            node.type = 'blockquote-alter'
-            // @ts-expect-error 允许修改
-            node.alter = match[1].toLowerCase()
-          }
-        }
-      })
+const mdast2hast: RemarkRehypeOptions['handlers'] = {
+  'blockquote-alter': (state, node, parent) => {
+    return {
+      type: 'element',
+      tagName: 'sx-alter',
+      children: state.all(node),
+      properties: {
+        alter: node.alter,
+      },
     }
-  })
-  .use(remarkGemoji)
-  .use(remarkGfm)
-  .use(remarkMath)
+  },
+}
+
+type Options = {
+  rehypePlugins?: PluggableList
+  remarkPlugins?: PluggableList
+  remarkRehypeOptions?: RemarkRehypeOptions
+}
+function createProcessor(options?: Options) {
+  const rehypePlugins = options?.rehypePlugins || []
+  const remarkPlugins = options?.remarkPlugins || []
+  const remarkRehypeOptions = options?.remarkRehypeOptions
+    ? { ...options.remarkRehypeOptions }
+    : {}
+
+  const processor = unified()
+    .use(remarkParse)
+    .use(() => {
+      return (tree: MdRoot) => {
+        visit(tree, 'blockquote', (node, index, parent) => {
+          const children = node.children
+          const firstNode = children[0]
+
+          if (firstNode?.type === 'paragraph' && firstNode.children?.[0]?.type === 'text') {
+            const firstTextNode = firstNode.children?.[0]
+            if (!firstTextNode || !firstTextNode.value) return
+
+            const match = firstTextNode.value.match(alterStateReg)
+            if (match?.[1]) {
+              firstTextNode.value = firstTextNode.value.replace(match[0], '')
+              // @ts-expect-error 允许修改
+              node.type = 'blockquote-alter'
+              // @ts-expect-error 允许修改
+              node.alter = match[1].toLowerCase()
+            }
+          }
+        })
+      }
+    })
+    .use(remarkGemoji)
+    .use(remarkGfm)
+    .use(remarkMath)
+    .use(remarkPlugins)
+    .use(remarkRehype, {
+      ...remarkRehypeOptions,
+      handlers: {
+        ...remarkRehypeOptions.handlers ?? {},
+        ...mdast2hast,
+      },
+    })
+    .use(rehypeRaw)
+    .use(rehypePlugins)
+
+  return processor
+}
 
 const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderSlots>((props, ctx) => {
-  const mdAst = shallowRef<RootContent[]>([])
+  const hAst = shallowRef<HRootContent[]>([])
   const loading = shallowRef(false)
-  const footnoteList = ref<Record<string, FootnoteDefinition['children']>>({})
+
+  // 后续会放web worker 暂未找到合适的入参方式，不支持自定义插件
+  // 某些插件需要浏览器运行时，
+  const processor = createProcessor({
+    remarkRehypeOptions: {
+      allowDangerousHtml: !!props.allowDangerousHtml,
+    },
+  })
 
   const parseMdText2Ast = async () => {
     try {
@@ -118,16 +166,10 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
 
       loading.value = true
 
-      const ast = await processor.run(processor.parse(props.content || '')) as Root
-      footnoteList.value = {}
-      visit(ast, 'footnoteDefinition', (node) => {
-        if (!Array.isArray(footnoteList.value[node.identifier])) {
-          footnoteList.value[node.identifier] = []
-        }
-        footnoteList.value[node.identifier].push(...node.children)
-      })
+      const ast = await processor.run(processor.parse(props.content || '')) as HRoot
+      // console.log('>>', ast.children)
 
-      mdAst.value = ast.children
+      hAst.value = ast.children
     }
     catch (error) {
       console.error(error)
@@ -144,212 +186,98 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
   }, {
     immediate: true,
     debounce: 50,
-    maxWait: 100,
+    maxWait: 60,
   })
 
-  const render = (ast: MDAstContent): VNode => {
+  const render = (ast: HAstContent): VNode => {
     const currentAst = Array.isArray(ast) ? ast : [ast]
 
-    const htmlRender = !!props.htmlRender
     return (
       <>
-        {currentAst.map((astItem) => {
-          const slotCustomRenderRender = ctx.slots.customRender?.({ ast: astItem, childrenRender: render })
+        {currentAst.map((astIt) => {
+          if (astIt.type === 'element') {
+            const slotCustomRender = ctx.slots.customRender?.({ ast: astIt, childrenRender: render })
 
-          const arr = slotCustomRenderRender?.filter(ele => !isEmptyElement(ele))?.map((ele: any) => h(ele)) ?? []
+            const customRenderArr = slotCustomRender?.filter(ele => !isEmptyElement(ele))?.map((ele: any) => h(ele)) ?? []
 
-          if (arr.length) return arr
+            if (customRenderArr.length) return customRenderArr
+            const tagName = astIt.tagName
 
-          if (astItem.type === 'paragraph') {
-            return <p>{render(astItem.children)}</p>
-          }
+            let codeNode: HElement | null = null
+            let display: CodeDisplay = 'block'
+            if (tagName === 'pre') {
+              codeNode = astIt.children[0].type === 'element' ? astIt.children[0] : null
+            }
+            if (tagName === 'code') {
+              display = 'inline'
+              codeNode = astIt
+            }
 
-          if (astItem.type === 'heading') {
-            const depth = astItem.depth ?? 6
-            return h(`h${depth}`, {}, render(astItem.children))
-          }
+            if (codeNode) {
+              const classNames = codeNode.properties.className
 
-          if (astItem.type === 'code') {
-            if (!astItem.lang) return null
+              if (Array.isArray(classNames) && classNames.length) {
+                let lang = ''
+                let code = ''
+                for (let i = 0; i < classNames.length; i++) {
+                  const cls = classNames[i].toString()
+                  const langMatch = cls.match(/^language-([\w-]+)$/)?.[1] ?? ''
+                  if (langMatch) {
+                    lang = langMatch
+                    break
+                  }
+                }
 
-            return (
-              <Code
-                code={astItem.value ?? ''}
-                language={astItem.lang ?? ''}
-                {...props.codeProps}
-              />
-            )
-          }
+                if (lang) {
+                  code = codeNode.children[0].type === 'text' ? codeNode.children[0].value : ''
+                  const codeSlots = ctx.slots.codeBlock?.({ language: lang, code, display })
+                  const codeSlotsArr = codeSlots?.filter(ele => !isEmptyElement(ele))?.map((ele: any) => h(ele)) ?? []
+                  if (codeSlotsArr.length) return codeSlotsArr
+                  return (
+                    <Code
+                      code={code}
+                      language={lang}
+                      {...props.codeProps}
+                    />
+                  )
+                }
+              }
+            }
 
-          if (astItem.type === 'list') {
-            if (astItem.ordered) {
+            if (tagName === 'sx-alter') {
+              const alterName = astIt.properties.alter
+              if (typeof alterName !== 'string' || !alterName) return null
+
+              const alterState = alterStateMap[alterName as AlterKey]
+              if (!alterState) return null
+
               return (
-                <ol>
-                  {render(astItem.children)}
-                </ol>
+                <div class={[ghStyles['markdown-alert'], alterState.class]}>
+                  <p class={ghStyles['markdown-alert-title']}>
+                    {h(alterState.icon, {
+                      class: ['mr-2'],
+                    })}
+                    {alterName.toUpperCase()}
+                  </p>
+                  {render(astIt.children)}
+                </div>
               )
             }
 
-            const isTaskNode = isBoolean(astItem.children?.[0]?.checked)
-            return (
-              <ul
-                class={clsx(isTaskNode ? ghStyles['contains-task-list'] : '')}
-              >
-                {render(astItem.children)}
-              </ul>
-            )
+            const oldClassName = astIt.properties.className
+
+            const className = Array.isArray(oldClassName)
+              ? oldClassName.map((cls) => {
+                  return ghStyles[cls]
+                })
+              : []
+
+            return h(astIt.tagName, { ...astIt.properties, class: className }, render(astIt.children))
           }
 
-          if (astItem.type === 'listItem') {
-            const isTaskNode = isBoolean(astItem.checked)
-            const node: RootContent[] = []
-            astItem.children.forEach((it) => {
-              if (it.type === 'paragraph') {
-                node.push(...it.children)
-              }
-            })
-            return (
-              <li
-                class={clsx(isTaskNode ? ghStyles['task-list-item'] : '')}
-              >
-                {isTaskNode && (
-                  <input
-                    type="checkbox"
-                    class={ghStyles['task-list-item-checkbox']}
-                    checked={!!astItem.checked}
-                    disabled
-                  />
-                )}
-                {render(isTaskNode ? node : astItem.children)}
-              </li>
-            )
+          if (astIt.type === 'text') {
+            return astIt.value
           }
-
-          if (astItem.type === 'inlineCode') {
-            return <code>{astItem.value}</code>
-          }
-
-          if (astItem.type === 'strong') {
-            return <strong>{render(astItem.children)}</strong>
-          }
-          if (astItem.type === 'delete') {
-            return (
-              <del>{render(astItem.children)}</del>
-            )
-          }
-
-          if (astItem.type === 'emphasis') {
-            return <em>{render(astItem.children)}</em>
-          }
-
-          if (astItem.type === 'image') {
-            return <img src={astItem.url} />
-          }
-
-          if (astItem.type === 'link') {
-            return (
-              <a
-                title={astItem.title || ''}
-                href={astItem.url}
-              >
-                {render(astItem.children)}
-              </a>
-            )
-          }
-
-          if (astItem.type === 'blockquote-alter') {
-            const alterState = alterStateMap[astItem.alter]
-            if (!alterState) return null
-            return (
-              <div class={[ghStyles['markdown-alert'], alterState.class]}>
-                <p class={ghStyles['markdown-alert-title']}>
-                  {h(alterState.icon, {
-                    class: ['mr-2'],
-                  })}
-                  {astItem.alter.toUpperCase()}
-                </p>
-                {render(astItem.children)}
-              </div>
-            )
-          }
-
-          if (astItem.type === 'blockquote') {
-            return (
-              <blockquote>
-                {render(astItem.children)}
-              </blockquote>
-            )
-          }
-
-          if (astItem.type === 'table') {
-            const thead = astItem.children?.[0]?.children?.map((cell) => {
-              return <th>{render(cell.children)}</th>
-            })
-
-            const tbody = drop(astItem.children, 1).map((row) => {
-              return (
-                <tr>
-                  {render(row.children)}
-                </tr>
-              )
-            })
-
-            return (
-              <table>
-                <thead>
-                  <tr>{thead}</tr>
-                </thead>
-                <tbody>{tbody}</tbody>
-              </table>
-            )
-          }
-
-          if (astItem.type === 'tableCell') {
-            return <td>{render(astItem.children)}</td>
-          }
-
-          if (astItem.type === 'thematicBreak') {
-            return <hr />
-          }
-          if (astItem.type === 'inlineMath') {
-            return <KatexRender type="inline" content={astItem.value} />
-          }
-          if (astItem.type === 'math') {
-            return <KatexRender type="block" content={astItem.value} />
-          }
-
-          if (astItem.type === 'text') {
-            return astItem.value || ''
-          }
-
-          if (astItem.type === 'html') {
-            if (!htmlRender) return null
-            // const matchName = astItem.value.match(/<([a-z0-9]+)/i)?.[1] || ''
-            return <div v-html={DOMPurify.sanitize(astItem.value)} />
-          }
-
-          if (astItem.type === 'footnoteReference') {
-            return (
-              <Popover
-                v-slots={{
-                  content: () => {
-                    const list = footnoteList.value[astItem.identifier]
-                    return render(list)
-                  },
-                }}
-              >
-                <sup>
-                  <Button size="small" color="primary" variant="link">
-                    [
-                    {astItem.label}
-                    ]
-                  </Button>
-                </sup>
-              </Popover>
-            )
-          }
-
-          // console.warn('>>', astItem)
 
           return null
         })}
@@ -367,12 +295,12 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
           props.class,
         )}
       >
-        {render(mdAst.value)}
+        {render(hAst.value)}
       </div>
     )
   }
 }, {
-  props: ['content', 'htmlRender', 'class', 'codeProps'],
+  props: ['content', 'allowDangerousHtml', 'class', 'codeProps'],
 })
 
 export default MDRender

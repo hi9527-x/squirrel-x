@@ -1,19 +1,8 @@
-Here's a simple footnote,[^1] and here's a longer one.[^bignote]
+## 公式math
 
-[^1]: This is the first footnote.
+Lift($$L$$) can be determined by Lift Coefficient ($$C_L$$) like the following
+equation.
 
-[^bignote]: Here's one with multiple paragraphs and code.
-
-    Indent paragraphs to include them in the footnote.
-
-    `{ my code }`
-
-    Add as many paragraphs as you like.
-
-## 表情
-
-去露营了！ :tent: 很快回来。
-
-真好笑！ :joy:
-
-### My Great Heading {#custom-id}
+$$
+L = \frac{1}{2} \rho v^2 S C_L
+$$

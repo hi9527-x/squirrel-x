@@ -73,7 +73,7 @@ const Tabs = defineComponent<TabsProps, TabsEmits, string, TabsSlots>((props, ct
       <div
         class={cn(
           'relative flex flex-col w-full',
-          tabType === 'line' ? 'border-b b-zinc-200' : 'bg-zinc-100 rounded-md',
+          tabType === 'line' ? 'border-b b-zinc-200' : 'bg-zinc-100',
           props.class,
         )}
       >

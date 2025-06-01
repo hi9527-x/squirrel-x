@@ -1,21 +1,20 @@
 <script setup lang="ts">
 import { Markdown } from 'squirrel-x'
-import { defineProps } from 'vue'
 
+import markdown from './echarts.md?raw'
 import EchartsTest from './EchartsTest.vue'
-
-const props = defineProps<{ markdown: string }>()
 </script>
 
 <template>
   <div>
     <Markdown
-      :content="props.markdown"
+      :content="markdown"
     >
-      <template #customRender="{ ast }">
-        <div v-if="ast.type === 'code' && ast.lang === 'x-echarts'">
-          <EchartsTest :code="ast.value" />
-        </div>
+      <template #codeBlock="{ language, code }">
+        <EchartsTest
+          v-if="language === 'x-echarts'"
+          :code="code"
+        />
       </template>
     </Markdown>
   </div>

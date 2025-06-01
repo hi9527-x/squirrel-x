@@ -52,72 +52,97 @@ const router = createRouter({
       },
       component: () => import('@/views/markdown'),
     },
-    ...import.meta.env.DEV
-      ? [{
-          path: '/ui',
-          name: 'ui',
+    {
+      path: '/mermaid',
+      name: 'mermaid',
+      meta: {
+        title: 'mermaid图表',
+
+      },
+      component: () => import('@/views/mermaid'),
+    },
+    {
+      path: '/math',
+      name: 'math',
+      meta: {
+        title: 'katex公式',
+      },
+      component: () => import('@/views/math'),
+    },
+    {
+      path: '/codeHljs',
+      name: 'codeHljs',
+      meta: {
+        title: '代码高亮',
+      },
+      component: () => import('@/views/codeHljs/index.vue'),
+    },
+    {
+      path: '/ui',
+      name: 'ui',
+      meta: {
+        title: 'ui',
+      },
+      redirect: '/ui/button',
+      children: [
+        {
+          path: 'button',
+          name: 'button',
           meta: {
-            title: 'ui',
+            title: 'button',
+
           },
-          redirect: '/ui/button',
-          children: [
-            {
-              path: 'button',
-              name: 'button',
-              meta: {
-                title: 'button',
+          component: () => import('@/views/button'),
+        },
+        {
+          path: 'select',
+          name: 'select',
+          meta: {
+            title: 'select',
 
-              },
-              component: () => import('@/views/button'),
-            },
-            {
-              path: 'select',
-              name: 'select',
-              meta: {
-                title: 'select',
+          },
+          component: () => import('@/views/select'),
+        },
+        {
+          path: 'empty',
+          name: 'empty',
+          meta: {
+            title: 'empty',
 
-              },
-              component: () => import('@/views/select'),
-            },
-            {
-              path: 'empty',
-              name: 'empty',
-              meta: {
-                title: 'empty',
+          },
+          component: () => import('@/views/empty'),
+        },
+        {
+          path: 'popover',
+          name: 'popover',
+          meta: {
+            title: 'popover',
 
-              },
-              component: () => import('@/views/empty'),
-            },
-            {
-              path: 'popover',
-              name: 'popover',
-              meta: {
-                title: 'popover',
+          },
+          component: () => import('@/views/popover'),
+        },
+        {
+          path: 'tabs',
+          name: 'tabs',
+          meta: {
+            title: 'tabs',
 
-              },
-              component: () => import('@/views/popover'),
-            },
-            {
-              path: 'tabs',
-              name: 'tabs',
-              meta: {
-                title: 'tabs',
-
-              },
-              component: () => import('@/views/tabs'),
-            },
-            {
+          },
+          component: () => import('@/views/tabs'),
+        },
+        ...import.meta.env.DEV
+          ? [{
               path: 'test',
               name: 'test',
               meta: {
                 title: 'test',
 
               },
-              component: () => import('@/views/test'),
-            },
-          ],
-        }]
-      : [],
+              component: () => import('@/views/test/index.vue'),
+            }]
+          : [],
+      ],
+    },
 
   ],
 })

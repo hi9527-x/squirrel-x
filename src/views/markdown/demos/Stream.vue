@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { Button, Markdown, Mermaid } from 'squirrel-x'
-import { defineProps, ref } from 'vue'
+import { Button, Katex, Markdown, Mermaid } from 'squirrel-x'
+import { ref } from 'vue'
 
-const props = defineProps<{ markdown: string }>()
+import markdown from './base.md?raw'
 
-const displayMarkdown = ref(props.markdown)
+const displayMarkdown = ref(markdown)
 
 const handleStart = () => {
-  if (!props.markdown) return
+  if (!markdown) return
   displayMarkdown.value = ''
   let currentIndex = 0
   const intervalId = setInterval(() => {
-    if (currentIndex < props.markdown.length) {
-      displayMarkdown.value += props.markdown[currentIndex]
+    if (currentIndex < markdown.length) {
+      displayMarkdown.value += markdown[currentIndex]
       currentIndex++
     }
     else {
@@ -34,10 +34,17 @@ const handleStart = () => {
     :htmlRender="true"
     :codeProps="{ toolbar: false, showLineNum: false }"
   >
-    <template #customRender="{ ast }">
-      <div v-if="ast.type === 'code' && ast.lang === 'mermaid'">
-        <Mermaid :code="ast.value" />
+    <template #codeBlock="{ code, language, display }">
+      <div v-if="language === 'mermaid'">
+        <Mermaid :code="code" />
       </div>
+
+      <template v-else-if="language === 'math'">
+        <Katex
+          :options="{ displayMode: display === 'block' }"
+          :tex="code"
+        />
+      </template>
     </template>
   </Markdown>
 </template>
