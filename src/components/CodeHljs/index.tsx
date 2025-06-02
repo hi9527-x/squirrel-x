@@ -243,7 +243,6 @@ const CodeRender = defineComponent<CodeProps, CodeEmits, string, CodeSlots>((pro
         <div
           class={cn(
             'py-1 px-4 bg-[--bgColor-muted] rounded-md',
-            'inline-block',
             isFullscreen.value ? 'bg-white' : '',
             props.class,
           )}
