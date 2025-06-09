@@ -1,8 +1,12 @@
 ## vue-mermaid组件
 
+### base
+
 基于vue3制作的mermaid，文本渲染图表组件
 
 <sx-code src="./demos/demo1.vue" showCode="./demos/demo1.vue" ></sx-code>
+
+### 流式渲染
 
 并且优化了在聊天窗里，sse接口的流式渲染
 

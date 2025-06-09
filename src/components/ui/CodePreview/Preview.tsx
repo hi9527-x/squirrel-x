@@ -42,7 +42,14 @@ const Preview = defineComponent<Props, Emits, string, Slots>((props, ctx) => {
           />
           <div class="">
             {actionKey.value === 'preview' && <div class="p-4">{ctx.slots?.default?.()}</div>}
-            {codeShow && <div class="bg-[--bgColor-muted]"><Code code={codeShow.code} language={codeShow.lang} /></div>}
+            {codeShow && (
+              <div class="bg-gray-500 bg-white">
+                <Code
+                  code={codeShow.code}
+                  language={codeShow.lang}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

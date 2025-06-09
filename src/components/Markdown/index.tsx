@@ -1,6 +1,5 @@
 import { watchDebounced } from '@vueuse/core'
-import { pick } from 'es-toolkit'
-import type { FootnoteDefinition as MdFootnoteDefinition, Root as MdRoot, RootContent as MdRootContent } from 'mdast'
+import type { Root as MdRoot } from 'mdast'
 import rehypeRaw from 'rehype-raw'
 import remarkGemoji from 'remark-gemoji'
 import remarkGfm from 'remark-gfm'
@@ -14,7 +13,7 @@ import type { PluggableList } from 'unified'
 import { unified } from 'unified'
 import { visit } from 'unist-util-visit'
 import type { SlotsType, VNode } from 'vue'
-import { defineComponent, h, ref, shallowRef, watch } from 'vue'
+import { defineComponent, h, shallowRef } from 'vue'
 
 import { cn, isEmptyElement } from '@/utils'
 import IconCircleAlert from '~icons/lucide/circle-alert'
@@ -67,6 +66,13 @@ const alterStateMap: Record<AlterKey, { icon: VNode, class: string }> = {
 const alterStateReg = new RegExp(`^\\[!(${alterKeys.join('|')})\\]\n?`, 'i')
 type CodeDisplay = 'block' | 'inline'
 
+type TocItem = {
+  id: string
+  name: string
+  level: number
+  children?: TocItem[]
+}
+
 type HAstContent = HRootContent | HRootContent[]
 export type MdRenderSlots = SlotsType<{
   customRender?: (params: { ast: HElement, childrenRender: (ast: HAstContent) => VNode }) => VNode[]
@@ -78,6 +84,7 @@ export type MdRenderProps = {
   allowDangerousHtml?: boolean
   class?: string
   codeProps?: Omit<CodeProps, 'code' | 'language'>
+  toc?: boolean
 }
 
 export type MdRenderEmits = {}
@@ -167,6 +174,7 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
       loading.value = true
 
       const ast = await processor.run(processor.parse(props.content || '')) as HRoot
+
       // console.log('>>', ast.children)
 
       hAst.value = ast.children
@@ -300,7 +308,7 @@ const MDRender = defineComponent<MdRenderProps, MdRenderEmits, string, MdRenderS
     )
   }
 }, {
-  props: ['content', 'allowDangerousHtml', 'class', 'codeProps'],
+  props: ['content', 'allowDangerousHtml', 'class', 'codeProps', 'toc'],
 })
 
 export default MDRender

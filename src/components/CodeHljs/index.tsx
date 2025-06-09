@@ -1,4 +1,4 @@
-import { useClipboard, useFullscreen } from '@vueuse/core'
+import { useClipboard } from '@vueuse/core'
 import hljs from 'highlight.js/lib/core'
 import cpp from 'highlight.js/lib/languages/cpp'
 import csharp from 'highlight.js/lib/languages/csharp'
@@ -18,10 +18,8 @@ import { Button, Select } from 'squirrel-x'
 import type { SlotsType, VNode } from 'vue'
 import { defineComponent, onMounted, ref, watch } from 'vue'
 
-import { cn } from '@/utils'
-import delay from '@/utils/delay'
-import isSupportFontFamily from '@/utils/isSupportFontFamily'
-import replaceClassNames from '@/utils/replaceClassNames'
+import { useViewFullscreen } from '@/components/hook'
+import { cn, delay, isSupportFontFamily, replaceClassNames } from '@/utils'
 import IconCheck from '~icons/lucide/check'
 import IconCopy from '~icons/lucide/copy'
 import IconExpand from '~icons/lucide/expand'
@@ -29,6 +27,7 @@ import IconToggleLeft from '~icons/lucide/toggle-left'
 import IconToggleRight from '~icons/lucide/toggle-right'
 
 import jbFont from './font/JetBrainsMono-Medium.woff2?url'
+// import scFont from './font/SourceCodePro-Medium.ttf.woff2?url'
 import hljsStyles from './hljs.module.css'
 
 export const languages = [
@@ -101,6 +100,7 @@ hljs.registerLanguage('vue', (hljs) => {
     ],
   }
 })
+
 hljs.registerLanguage('javascript', typescript)
 hljs.registerLanguage('typescript', typescript)
 hljs.registerLanguage('css', css)
@@ -121,8 +121,10 @@ let isHasFont = false
 const loadFont = pDebounce(async () => {
   try {
     // await delay(5000)
+    // return false
     if (isHasFont) return true
     const family = 'Jetbrains Mono'
+    // const family = 'SourceCodePro'
     const fontCdn = jbFont
     isHasFont = isSupportFontFamily(family)
 
@@ -176,14 +178,13 @@ const CodeRender = defineComponent<CodeProps, CodeEmits, string, CodeSlots>((pro
   const showLineNum = ref(props.showLineNum !== false)
   const language = ref('plaintext')
 
+  const { className, toggle } = useViewFullscreen()
+
   const { copy, copied, isSupported } = useClipboard({
     copiedDuring: 1000,
   })
 
   const fontLoad = ref(false)
-  const elCode = ref<HTMLElement>()
-
-  const { isFullscreen, toggle } = useFullscreen(elCode)
 
   onMounted(async () => {
     if (props.betterFont !== false) {
@@ -206,17 +207,23 @@ const CodeRender = defineComponent<CodeProps, CodeEmits, string, CodeSlots>((pro
     const codePre = (
       <pre
         class={cn(
-          (betterFont) ? 'font-[Jetbrains_Mono]! text-3.5! tracking-wide' : '',
-          'font-sans',
-          'p0 bg-transparent!',
+          'font-sans text-3.5! line-height-normal',
+          'px-4 py-2! bg-gray-50!',
+          (betterFont && fontLoad.value)
+            ? cn(
+                'font-[Jetbrains_Mono]!',
+                // 'font-[SourceCodePro]!',
+                'tracking-wide',
+              )
+            : '',
         )}
       >
         {codeHtml.map((line, idx) => {
           return (
-            <div key={idx} class="flex gap-2">
+            <div key={idx} class="flex">
               <div class={[
-                'select-none c-gray min-w-5',
-                showLineNum.value ? 'block' : 'hidden',
+                'select-none c-gray ',
+                showLineNum.value ? 'min-w-5 mr-2' : 'overflow-hidden w-0px',
               ]}
               >
                 {idx + 1}
@@ -239,105 +246,104 @@ const CodeRender = defineComponent<CodeProps, CodeEmits, string, CodeSlots>((pro
     }
 
     return (
-      <div>
-        <div
-          class={cn(
-            'py-1 px-4 bg-[--bgColor-muted] rounded-md',
-            isFullscreen.value ? 'bg-white' : '',
-            props.class,
-          )}
-          ref={elCode}
-        >
-          {toolbarEnable && (
-            <div
-              class={[
-                'flex justify-between',
-              ]}
-            >
-              <div>
+      <div
+        class={cn(
+          'bg-gray-50 rounded-md bg-gray-50',
+          props.class,
+          className.value,
+        )}
+      >
+        {toolbarEnable && (
+          <div
+            class={cn(
+              'flex justify-between pos-sticky top-0px',
+              'px-2',
+              'rounded-tr-md rounded-tl-md',
+            )}
+          >
+            <div>
 
-                {toolbarConfig.language && (
-                  <Select
-                    class=""
-                    bordered={false}
-                    options={languages.map((it) => {
-                      return { label: it, value: it }
-                    })}
-                    size="small"
-                    value={language.value}
-                    onChange={(val) => {
-                      if (typeof val === 'string') {
-                        language.value = val
-                      }
-                    }}
-                  />
-                )}
-              </div>
-
-              <div>
-                {toolbarConfig.lineNum && (
-                  <Button
-                    variant="text"
-                    size="small"
-                    onClick={() => { showLineNum.value = !showLineNum.value }}
-                  >
-                    {showLineNum.value
-                      ? (
-                          <IconToggleLeft
-                            class={cn(
-                              'c-[--fgColor-muted]',
-                            )}
-                          />
-                        )
-                      : (
-                          <IconToggleRight
-                            class={cn(
-                              'c-[--fgColor-muted]',
-                            )}
-                          />
-                        )}
-                  </Button>
-                )}
-
-                {toolbarConfig.fullScreen && (
-                  <Button
-                    variant="text"
-                    size="small"
-                    onClick={() => { toggle() }}
-                  >
-                    <IconExpand class="c-[--fgColor-muted]" />
-                  </Button>
-                )}
-
-                {(toolbarConfig.copy && isSupported.value) && (
-                  <Button
-                    variant="text"
-                    size="small"
-                    onClick={() => { copy(props.code || '') }}
-                  >
-                    {copied.value
-                      ? (
-                          <IconCheck
-                            class={cn(
-                              'c-[--fgColor-muted]',
-                            )}
-                          />
-                        )
-                      : (
-                          <IconCopy
-                            class={cn(
-                              'c-[--fgColor-muted]',
-                            )}
-                          />
-                        )}
-                  </Button>
-                )}
-
-              </div>
+              {toolbarConfig.language && (
+                <Select
+                  class=""
+                  bordered={false}
+                  options={languages.map((it) => {
+                    return { label: it, value: it }
+                  })}
+                  size="small"
+                  value={language.value}
+                  onChange={(val) => {
+                    if (typeof val === 'string') {
+                      language.value = val
+                    }
+                  }}
+                />
+              )}
             </div>
-          )}
-          {codePre}
-        </div>
+
+            <div>
+              {toolbarConfig.lineNum && (
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => { showLineNum.value = !showLineNum.value }}
+                >
+                  {showLineNum.value
+                    ? (
+                        <IconToggleLeft
+                          class={cn(
+                            'text-gray-500',
+                          )}
+                        />
+                      )
+                    : (
+                        <IconToggleRight
+                          class={cn(
+                            'text-gray-500',
+                          )}
+                        />
+                      )}
+                </Button>
+              )}
+
+              {toolbarConfig.fullScreen && (
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => { toggle() }}
+                >
+                  <IconExpand class="text-gray-500" />
+                </Button>
+              )}
+
+              {(toolbarConfig.copy && isSupported.value) && (
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => { copy(props.code || '') }}
+                >
+                  {copied.value
+                    ? (
+                        <IconCheck
+                          class={cn(
+                            'text-gray-500',
+                          )}
+                        />
+                      )
+                    : (
+                        <IconCopy
+                          class={cn(
+                            'text-gray-500',
+                          )}
+                        />
+                      )}
+                </Button>
+              )}
+
+            </div>
+          </div>
+        )}
+        {codePre}
       </div>
     )
   }

@@ -1,7 +1,7 @@
-const isSupportFontFamily = (font: string) => {
+export const isSupportFontFamily = (font: string) => {
   if (typeof font !== 'string' || font.trim().length === 0) return false
   if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
-    return false;
+    return false
   }
   const base = 'Arial'
   if (font.toLowerCase() === base.toLowerCase()) {
@@ -31,5 +31,3 @@ const isSupportFontFamily = (font: string) => {
 
   return gen(base).join('') !== gen(font).join('')
 }
-
-export default isSupportFontFamily

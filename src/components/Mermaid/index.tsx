@@ -1,101 +1,117 @@
-import { createGlobalState, watchDebounced } from '@vueuse/core'
-import { debounce } from 'es-toolkit'
-import { findLastIndex } from 'es-toolkit/compat'
-import { createMermaidRenderer } from 'mermaid-isomorphic'
-import { Empty } from 'squirrel-x'
-import type { SlotsType } from 'vue'
-import { defineComponent, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
+import { watchDebounced } from '@vueuse/core'
+import interact from 'interactjs'
+import mermaid from 'mermaid'
+import { Button, Empty } from 'squirrel-x'
+import { defineComponent, onMounted, onUnmounted, ref, watch } from 'vue'
 
-type ChartResultSuccess = {
-  state: 'success'
-  svg: string
-  width: number
-  height: number
-}
+import { cn } from '@/utils'
+import IconExpand from '~icons/lucide/expand'
+import IconRotateCcw from '~icons/lucide/rotate-ccw'
+import IconZoomIn from '~icons/lucide/zoom-in'
+import IconZoomOut from '~icons/lucide/zoom-out'
 
-type ChartResult = { code: string } & ({
-  state: 'loading'
-} | ChartResultSuccess | {
-  state: 'error'
-})
+import { useViewFullscreen } from '../hook'
 
-const midRender = createMermaidRenderer()
-
-const useChartStore = createGlobalState(() => {
-  const code2svg = ref<Record<string, ChartResult>>({})
-
-  const generateLoading = ref(false)
-
-  const generateSvg = debounce(async () => {
-    if (generateLoading.value) return
-    const diagrams = Object.entries(code2svg.value).filter(([_, item]) => item.state === 'loading').map(([key]) => key)
-    if (!diagrams.length) return
-    try {
-      generateLoading.value = true
-      const result = await midRender(diagrams)
-      result.forEach((it, idx) => {
-        const code = diagrams[idx]
-        if (it.status === 'rejected') {
-          code2svg.value[code] = { state: 'error', code }
-        }
-        else if (it.status === 'fulfilled') {
-          code2svg.value[code] = {
-            code,
-            state: 'success',
-            width: it.value.width,
-            height: it.value.height,
-            svg: it.value.svg,
-
-          }
-        }
-      })
-    }
-    catch (error) {
-      console.error(error)
-    }
-    finally {
-      generateLoading.value = false
-
-      generateSvg()
-    }
-  }, 500)
-
-  const createChartSvg = async (code: string) => {
-    if (code2svg.value[code]) return
-
-    code2svg.value[code] = {
-      state: 'loading',
-      code,
-    }
-
-    generateSvg()
-  }
-
-  return {
-    createChartSvg,
-    code2svg,
-  }
-})
-
-type MermaidSlots = SlotsType<{}>
-type MermaidEmits = {}
+const midCache: Record<string, string> = {}
 
 export type MermaidProps = {
   code?: string
+  options?: {
+    prefix?: string
+  }
 }
+let count = 0
+const Mermaid = defineComponent<MermaidProps>((props, ctx) => {
+  const svtString = ref('')
+  const refChartEle = ref<HTMLElement>()
 
-const Mermaid = defineComponent<
-  MermaidProps,
-  MermaidEmits,
-  string,
-  MermaidSlots
->((props) => {
-  const chartStore = useChartStore()
-  const chart = ref<ChartResult | null>(null)
+  const container = document.createElement('div')
+  container.ariaHidden = 'true'
+  container.style.maxHeight = '0'
+  container.style.opacity = '0'
+  container.style.overflow = 'hidden'
+  document.body.append(container)
 
-  watchDebounced(() => props.code, (code) => {
-    if (code) {
-      chartStore.createChartSvg(code)
+  let isDrag = false
+  const chartCss = {
+    x: 0,
+    y: 0,
+    scale: 1,
+  }
+
+  const { isFullscreen, toggle, className } = useViewFullscreen()
+  const handleChartCss = () => {
+    if (!refChartEle.value) return
+    refChartEle.value.style.transform = `scale(${chartCss.scale}) translate(${chartCss.x}px, ${chartCss.y}px)`
+  }
+  const handleZoomIn = () => {
+    chartCss.scale += 0.1
+    handleChartCss()
+  }
+
+  const handleZoomOut = () => {
+    // if (chartCss.scale <= 1) return
+    chartCss.scale -= 0.1
+    handleChartCss()
+  }
+
+  const handleReset = () => {
+    chartCss.scale = 1
+    chartCss.x = 0
+    chartCss.y = 0
+    handleChartCss()
+  }
+
+  watch(isFullscreen, () => {
+    handleReset()
+  })
+
+  watch((refChartEle), (ele) => {
+    if (isDrag || !ele) return
+    isDrag = true
+
+    interact(ele)
+      .draggable({
+        inertia: true,
+        modifiers: [
+
+        ],
+
+        listeners: {
+          move: (event) => {
+            const x = chartCss.x + event.dx
+            const y = chartCss.y + event.dy
+            chartCss.x = x
+            chartCss.y = y
+            handleChartCss()
+          },
+        },
+      })
+  }, {
+    immediate: true,
+  })
+
+  watchDebounced([() => props.code], async ([code]) => {
+    if (!code) return
+    if (midCache[code]) {
+      svtString.value = midCache[code]
+      return
+    }
+
+    try {
+      const chart = await mermaid.parse(code, { suppressErrors: false })
+      if (!chart) return
+
+      count += 1
+      const id = `${props.options?.prefix ?? 'mermaid'}-${count}`
+
+      const renderResult = await mermaid.render(id, code, container)
+
+      midCache[code] = renderResult.svg
+      svtString.value = renderResult.svg
+    }
+    catch (error) {
+      // console.error(error)
     }
   }, {
     immediate: true,
@@ -103,22 +119,52 @@ const Mermaid = defineComponent<
     maxWait: 120,
   })
 
-  watch([chartStore.code2svg, () => props.code], ([code2svg, code]) => {
-    if (!code) return
-    const result = code2svg[code]
-    if (result?.state === 'success') {
-      chart.value = result
-    }
-  }, {
-    immediate: true,
-    deep: true
+  onUnmounted(() => {
+    container.remove()
   })
 
+  const handleFull = () => {
+    toggle()
+    handleReset()
+  }
+
   return () => {
-    if (chart.value?.state === 'success') return <div class="overflow-x-auto py-4">
-      <div style={`width: ${chart.value.width}px; height: ${chart.value.height}px`} v-html={chart.value.svg} />
-    </div>
-    return <Empty description="生成中，请稍后" />
+    if (!props.code) return null
+    if (!svtString.value) return <Empty description="请稍后..." />
+    return (
+      <div class={cn('pos-relative bg-white', className.value)}>
+        {svtString.value && (
+          <div
+            class={cn(
+              'overflow-hidden h-full w-full',
+              'flex items-center',
+            )}
+
+          >
+            <span
+              ref={refChartEle}
+              class={cn(
+                'inline-block w-full text-center',
+                'cursor-grab select-none',
+              )}
+              v-html={svtString.value}
+            >
+            </span>
+          </div>
+        )}
+
+        <div class={cn(
+          'pos-absolute top-3 right-3',
+          'flex items-center gap-2',
+        )}
+        >
+          <IconZoomIn class="cursor-pointer" onClick={handleZoomIn} />
+          <IconZoomOut class="cursor-pointer" onClick={handleZoomOut} />
+          <IconRotateCcw class="cursor-pointer" onClick={handleReset} />
+          <IconExpand class="cursor-pointer" onClick={handleFull} />
+        </div>
+      </div>
+    )
   }
 }, {
   props: ['code'],

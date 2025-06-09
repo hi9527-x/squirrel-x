@@ -1,4 +1,4 @@
-const replaceClassNames = (html: string, styles: Record<string, string>) => {
+export const replaceClassNames = (html: string, styles: Record<string, string>) => {
   const parser = new DOMParser()
   const doc = parser.parseFromString(html, 'text/html')
 
@@ -12,5 +12,3 @@ const replaceClassNames = (html: string, styles: Record<string, string>) => {
 
   return doc.body.innerHTML
 }
-
-export default replaceClassNames

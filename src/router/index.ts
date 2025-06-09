@@ -78,6 +78,14 @@ const router = createRouter({
       component: () => import('@/views/codeHljs/index.vue'),
     },
     {
+      path: '/changelog',
+      name: 'changelog',
+      meta: {
+        title: '更新日志',
+      },
+      component: () => import('@/views/changelog'),
+    },
+    {
       path: '/ui',
       name: 'ui',
       meta: {
@@ -136,6 +144,7 @@ const router = createRouter({
               name: 'test',
               meta: {
                 title: 'test',
+                hideMenu: true,
 
               },
               component: () => import('@/views/test/index.vue'),

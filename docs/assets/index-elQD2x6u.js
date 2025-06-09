@@ -1,0 +1,1 @@
+import"./index-DHAcTbtD.js";import{E as r}from"./index-BdLgkEAI.js";import{d as t,c as o}from"./index-ZgcHhE59.js";const a=t((p,e)=>()=>o("div",{class:"p-4"},[o(r,null,null)]),{props:[]});export{a as default};

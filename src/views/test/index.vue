@@ -1,24 +1,23 @@
 <script setup lang="ts">
-import { Katex, Markdown } from 'squirrel-x'
+import mdText from './markdown.md?raw'
 
-import content from './markdown.md?raw'
+const worker = new Worker(new URL('./mark.work.ts', import.meta.url), {
+  type: 'module',
+})
+
+const handleStart = () => {
+  worker.postMessage({
+    markdown: mdText,
+  })
+}
 </script>
 
 <template>
-  <Markdown
-    class="p-4"
-    :content="content"
-    :allowDangerousHtml="true"
-  >
-    <template #codeBlock="{ language, code, display }">
-      <template v-if="language === 'math'">
-        <Katex
-          :options="{ displayMode: display === 'block' }"
-          :tex="code"
-        />
-      </template>
-    </template>
-  </Markdown>
+  <p>
+    <button @click="handleStart">
+      开始
+    </button>
+  </p>
 </template>
 
 <style module="Css" lang="less">

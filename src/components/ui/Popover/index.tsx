@@ -1,5 +1,5 @@
 import type { Placement } from '@floating-ui/vue'
-import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
+import { autoPlacement, autoUpdate, flip, offset, shift, size, useFloating } from '@floating-ui/vue'
 import { onClickOutside } from '@vueuse/core'
 import { isBoolean } from 'es-toolkit'
 import type { SlotsType, VNode } from 'vue'
@@ -43,6 +43,16 @@ const Popover = defineComponent<PopoverProps, PopoverEmits, string, PopoverSlots
       offset(),
       shift(),
       flip(),
+      size({
+        apply({ availableHeight, availableWidth, elements }) {
+          Object.assign(elements.floating.style, {
+            maxHeight: (availableHeight - 32) >= elements.floating.scrollHeight ? '' : `${availableHeight - 32}px`,
+            maxWidth: (availableWidth - 32) >= elements.floating.scrollWidth ? '' : `${availableWidth - 32}px`,
+            overflow: 'auto',
+          })
+        },
+      }),
+
     ],
     placement: props.placement,
     strategy: 'absolute',
@@ -118,6 +128,7 @@ const Popover = defineComponent<PopoverProps, PopoverEmits, string, PopoverSlots
                 'flex-col gap-1',
                 'text-3.5',
                 'z-9527',
+                'box-border',
               )}
               ref={floating}
               style={open.value ? floatingStyles.value : ''}
