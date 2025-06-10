@@ -1,23 +1,14 @@
 <script setup lang="ts">
-import mdText from './markdown.md?raw'
+import { VueMarkdown } from 'squirrel-x'
+import { h } from 'vue'
 
-const worker = new Worker(new URL('./mark.work.ts', import.meta.url), {
-  type: 'module',
-})
-
-const handleStart = () => {
-  worker.postMessage({
-    markdown: mdText,
-  })
-}
+import content from './markdown.md?raw'
 </script>
 
 <template>
-  <p>
-    <button @click="handleStart">
-      开始
-    </button>
-  </p>
+  <VueMarkdown
+    :content="content"
+  />
 </template>
 
 <style module="Css" lang="less">
