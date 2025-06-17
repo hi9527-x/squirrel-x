@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, Markdown, Popover } from 'squirrel-x'
+import { Button, Popover, VueMarkdownHook } from 'squirrel-x'
 
 import IconArrowOutUpRight from '~icons/lucide/square-arrow-out-up-right'
 
@@ -9,12 +9,12 @@ const content = `
 </script>
 
 <template>
-  <Markdown
+  <VueMarkdownHook
     :content="content"
   >
-    <template #customRender="{ ast, childrenRender }">
+    <template #components="{ tree, childrenRender }">
       <Popover
-        v-if="ast.tagName === 'a'"
+        v-if="tree.type === 'element' && tree.tagName === 'a'"
         trigger="click"
         placement="bottom-start"
       >
@@ -23,7 +23,7 @@ const content = `
             <span>即将跳转到外部网站</span>
             <a
               target="_blank"
-              :href="ast.properties.href as string"
+              :href="tree.properties.href as string"
             >
               <Button variant="link">
                 <IconArrowOutUpRight />
@@ -36,9 +36,9 @@ const content = `
           color="primary"
           size="small"
         >
-          <component :is="childrenRender(ast.children)" />
+          <component :is="childrenRender(tree.children)" />
         </Button>
       </Popover>
     </template>
-  </Markdown>
+  </VueMarkdownHook>
 </template>

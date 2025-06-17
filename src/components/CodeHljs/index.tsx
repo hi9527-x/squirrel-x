@@ -138,7 +138,7 @@ const loadFont = pDebounce(async () => {
   catch (error) {
     return false
   }
-}, 200)
+}, 5)
 
 type CodeSlots = SlotsType<{
   default?: () => VNode[]
@@ -257,7 +257,7 @@ const CodeRender = defineComponent<CodeProps, CodeEmits, string, CodeSlots>((pro
           <div
             class={cn(
               'flex justify-between pos-sticky top-0px',
-              'px-2',
+              'px-2 bg-gray-50',
               'rounded-tr-md rounded-tl-md',
             )}
           >

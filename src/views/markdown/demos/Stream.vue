@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, Katex, Markdown, Mermaid } from 'squirrel-x'
+import { Button, Katex, VueMarkdownPro, Mermaid } from 'squirrel-x'
 import { ref } from 'vue'
 
 import markdown from './base.md?raw'
@@ -29,22 +29,20 @@ const handleStart = () => {
   >
     开始
   </Button>
-  <Markdown
+  <VueMarkdownPro
     :content="displayMarkdown"
-    :htmlRender="true"
     :codeProps="{ toolbar: false, showLineNum: false }"
   >
-    <template #codeBlock="{ code, language, display }">
+    <template #codeBlock="{ code, language }">
       <div v-if="language === 'mermaid'">
         <Mermaid :code="code" />
       </div>
 
       <template v-else-if="language === 'math'">
         <Katex
-          :options="{ displayMode: display === 'block' }"
           :tex="code"
         />
       </template>
     </template>
-  </Markdown>
+  </VueMarkdownPro>
 </template>

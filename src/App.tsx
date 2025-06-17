@@ -1,5 +1,4 @@
 import './App.css'
-import '@unocss/reset/eric-meyer.css'
 import '@unocss/reset/normalize.css'
 
 import type { SlotsType, VNode } from 'vue'

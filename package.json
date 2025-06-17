@@ -1,7 +1,7 @@
 {
   "name": "squirrel-x",
   "type": "module",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "license": "MIT",
   "homepage": "http://squirrelx.hi9527.ren/",
   "repository": {
@@ -17,6 +17,7 @@
   },
   "main": "./dist/squirrel-x.es.js",
   "module": "./dist/squirrel-x.es.js",
+  "unpkg": "./dist/squirrel-x.umd.js",
   "types": "./dist/squirrel-x.d.ts",
   "files": [
     "dist"
@@ -29,6 +30,7 @@
   },
   "dependencies": {
     "@floating-ui/vue": "^1.1.6",
+    "@shikijs/rehype": "^3.6.0",
     "@tanstack/query-core": "^5.80.6",
     "@tanstack/vue-query": "^5.80.2",
     "@unocss/reset": "^66.1.2",

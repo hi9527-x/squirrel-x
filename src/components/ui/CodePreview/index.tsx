@@ -1,5 +1,5 @@
-import type { HElement } from 'squirrel-x'
-import { Markdown } from 'squirrel-x'
+import type { ChildrenRender, HElementContent } from 'squirrel-x'
+import { VueMarkdownPro } from 'squirrel-x'
 import * as v from 'valibot'
 import type { SlotsType, VNode } from 'vue'
 import { defineComponent, h } from 'vue'
@@ -27,14 +27,13 @@ type Props = {
 const CodePreview = defineComponent<Props, Emits, string, Slots>((props, ctx) => {
   return () => {
     return (
-      <Markdown
-        allowDangerousHtml
+      <VueMarkdownPro
         content={props.markdown}
         v-slots={{
-          customRender: (params: { ast: HElement }) => {
-            const ast = params.ast
-            if (ast.tagName === 'sx-code') {
-              const { success, output } = v.safeParse(CodeDemoSchema, ast.properties)
+          components: (params: { tree: HElementContent, childrenRender: ChildrenRender }) => {
+            const tree = params.tree
+            if (tree.type === 'element' && tree.tagName === 'sx-code') {
+              const { success, output } = v.safeParse(CodeDemoSchema, tree.properties)
               if (!success) return null
               const component = props.modules?.[output.src]
               if (!component) return null

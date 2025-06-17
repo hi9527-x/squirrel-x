@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { Markdown, Mermaid } from 'squirrel-x'
+import { VueMarkdownPro, Mermaid } from 'squirrel-x'
 
 import markdown from './mermaid.md?raw'
 </script>
 
 <template>
-  <Markdown :content="markdown">
+  <VueMarkdownPro :content="markdown">
     <template #codeBlock="{ code, language }">
       <div v-if="language === 'mermaid'">
         <Mermaid :code="code" />
       </div>
     </template>
-  </Markdown>
+  </VueMarkdownPro>
 </template>
 
 <style module="Css" lang="less">

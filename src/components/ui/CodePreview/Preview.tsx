@@ -4,9 +4,9 @@ import { defineComponent, ref } from 'vue'
 
 import { cn } from '@/utils'
 
-type Slots = SlotsType<{
+type Slots = {
   default?: () => VNode[]
-}>
+}
 type Emits = {}
 
 type Props = {
@@ -17,13 +17,13 @@ type Props = {
   }[]
 }
 
-const Preview = defineComponent<Props, Emits, string, Slots>((props, ctx) => {
+const Preview = defineComponent<Props, Emits, string, SlotsType<Slots>>((props, ctx) => {
   const actionKey = ref('preview')
   return () => {
     const codeShow = props.tabsCodeList?.[Number(actionKey.value)]
+    
     return (
-      <div>
-        <div class={cn(
+      <div class={cn(
           'b b-solid b-gray-200 rounded-md inline-block min-w-600px',
         )}
         >
@@ -52,11 +52,11 @@ const Preview = defineComponent<Props, Emits, string, Slots>((props, ctx) => {
             )}
           </div>
         </div>
-      </div>
     )
   }
 }, {
   props: ['tabsCodeList'],
+  inheritAttrs: false
 })
 
 export default Preview

@@ -50,7 +50,21 @@ const router = createRouter({
         title: 'markdown',
 
       },
-      component: () => import('@/views/markdown'),
+      redirect: '/markdown/vue-markdown',
+      children: [
+        {
+          path: 'vue-markdown',
+          name: 'vue-markdown',
+          meta: { title: 'vue-markdown' },
+          component: () => import('@/views/vue-markdown/index.vue'),
+        },
+        {
+          path: 'vue-markdown-pro',
+          name: 'vue-markdown-pro',
+          meta: { title: 'vue-markdown-pro' },
+          component: () => import('@/views/markdown'),
+        },
+      ],
     },
     {
       path: '/mermaid',
@@ -101,6 +115,15 @@ const router = createRouter({
 
           },
           component: () => import('@/views/button'),
+        },
+        {
+          path: 'alert',
+          name: 'alert',
+          meta: {
+            title: 'alert',
+
+          },
+          component: () => import('@/views/alert'),
         },
         {
           path: 'select',

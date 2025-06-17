@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Markdown } from 'squirrel-x'
+import { VueMarkdownPro } from 'squirrel-x'
 
 import markdown from './echarts.md?raw'
 import EchartsTest from './EchartsTest.vue'
@@ -7,7 +7,7 @@ import EchartsTest from './EchartsTest.vue'
 
 <template>
   <div>
-    <Markdown
+    <VueMarkdownPro
       :content="markdown"
     >
       <template #codeBlock="{ language, code }">
@@ -16,7 +16,7 @@ import EchartsTest from './EchartsTest.vue'
           :code="code"
         />
       </template>
-    </Markdown>
+    </VueMarkdownPro>
   </div>
 </template>
 

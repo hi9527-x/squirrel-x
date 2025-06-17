@@ -41,15 +41,16 @@ export default defineConfig(({ mode }) => {
           entry: path.resolve(__dirname, 'src/components/index.ts'),
           name: 'squirrel-x',
           fileName: format => `squirrel-x.${format}.js`,
-          formats: ['es'],
+          formats: ['es', 'umd'],
         },
         // cssCodeSplit: true,
         rollupOptions: {
-          external: ['vue'],
+          external: ['vue', 'mermaid'],
           output: {
             // manualChunks: (id) => {},
             globals: {
               vue: 'Vue',
+              mermaid: 'mermaid',
             },
           },
         },
