@@ -4,7 +4,7 @@ import type { SlotsType, VNode } from 'vue'
 import { defineComponent, onMounted, onUnmounted, shallowRef } from 'vue'
 
 import type { VueMdWorkerParams } from './common'
-import MarkdownToHast from './markdownToHast.worker?worker'
+import MarkdownToHast from './markdownToHast?worker&inline'
 import type { MarkdownToVnodeProps, MarkdownToVnodeSlots } from './MarkdownToVnode'
 import MarkdownToVnode from './MarkdownToVnode'
 
