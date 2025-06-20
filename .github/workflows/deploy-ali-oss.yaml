@@ -1,0 +1,55 @@
+name: Deploy to aliyun oss
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build Vite project
+        run: pnpm run build
+
+      - name: Setup Rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+
+          mkdir -p ~/.config/rclone/
+
+          echo "[aliyun_oss]" > ~/.config/rclone/rclone.conf
+          echo "type = s3" >> ~/.config/rclone/rclone.conf
+          echo "provider = Alibaba" >> ~/.config/rclone/rclone.conf
+          echo "access_key_id = ${{ secrets.ALIYUN_ACCESS_KEY_ID }}" >> ~/.config/rclone/rclone.conf
+          echo "secret_access_key = ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}" >> ~/.config/rclone/rclone.conf
+          echo "endpoint = oss-cn-hongkong.aliyuncs.com" >> ~/.config/rclone/rclone.conf
+          echo "acl = public-read" >> ~/.config/rclone/rclone.conf
+          echo "storage_class = STANDARD" >> ~/.config/rclone/rclone.conf
+
+      - name: Sync to Aliyun OSS with Rclone
+        run: |
+          rclone sync docs/ aliyun_oss:${{ secrets.ALIYUN_OSS_BUCKET }} \
+            --progress
+          echo "Vite project successfully synced to Aliyun OSS!"

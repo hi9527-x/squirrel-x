@@ -1,4 +1,5 @@
 import path from 'node:path'
+import process from 'node:process'
 import { fileURLToPath, URL } from 'node:url'
 
 import vue from '@vitejs/plugin-vue'
@@ -59,7 +60,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    base: './',
+    base: process.env?.VITE_APP_BASE || '/',
     plugins,
     resolve,
     build: {
