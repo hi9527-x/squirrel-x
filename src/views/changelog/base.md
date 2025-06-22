@@ -1,8 +1,9 @@
 # 更新日志
 
-## version`0.1.0`
+## version`0.1.3`
 
-待补充
+* 添加`VueMarkdown`,`VueMarkdownHook`,`VueMarkdownWorker`组件，只负责渲染markdown到vue上
+* `VueMarkdownWorker`是子线程解析markdown内容，不阻塞交互，但也不支持添加rehype和remark的插件
 
 ## version`0.0.5`
 

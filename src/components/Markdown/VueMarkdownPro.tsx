@@ -63,8 +63,9 @@ const VueMarkdownPro = defineComponent<VueMarkdownProProps, VueMarkdownProEmits,
                   if (match && type) {
                     const content: Text[] = []
                     const title: Parameters<ChildrenRender>[0] = []
-                    for (let i = 0; i < firstNode.children.length; i++) {
-                      const element = firstNode.children[i]
+                    let lineIndex = 0
+                    for (; lineIndex < firstNode.children.length; lineIndex++) {
+                      const element = firstNode.children[lineIndex]
                       if (element.type === 'text') {
                         const text = element.value
                         const matchLine = text.match(/\r?\n/)
@@ -79,7 +80,7 @@ const VueMarkdownPro = defineComponent<VueMarkdownProProps, VueMarkdownProEmits,
                           if (beforeNewline) {
                             title.push({
                               type: 'text',
-                              value: beforeNewline.replace(match[0], ''),
+                              value: beforeNewline,
                             })
                           }
                           if (afterNewline) {
@@ -94,20 +95,42 @@ const VueMarkdownPro = defineComponent<VueMarkdownProProps, VueMarkdownProEmits,
                       }
                       title.push(element)
                     }
+
+                    if (title[0]?.type === 'text') {
+                      title[0].value = title[0].value.replace(match[0], '')
+                    }
+
                     const alterContent = [
                       {
                         ...firstNode,
-                        children: content,
+                        children: [
+                          ...content,
+                          ...firstNode.children.slice(lineIndex + 1),
+                        ],
                       },
                       ...tree.children.slice(2),
-                    ]
+                    ].filter((it) => {
+                      if (it.type === 'element' && !it.children.length) {
+                        return false
+                      }
+                      else if (it.type === 'text') {
+                        const value = it.value.replace('/\r?\n/', '').trim()
+                        if (!value) return false
+                      }
+
+                      return true
+                    })
+                    // console.log('>> tree', tree)
+                    // console.log('>> title', title)
+                    // console.log('>> alterContent', alterContent)
+
                     return (
                       <Alert
-                        class="mt-4"
+                        class="my-2"
                         type={type as AlterKey}
                         v-slots={{
                           message: () => title.length ? <span>{childrenRender(title)}</span> : null,
-                          description: () => childrenRender(alterContent),
+                          description: () => alterContent.length ? childrenRender(alterContent) : null,
                         }}
                       />
                     )

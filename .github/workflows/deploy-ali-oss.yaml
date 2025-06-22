@@ -51,5 +51,6 @@ jobs:
       - name: Sync to Aliyun OSS with Rclone
         run: |
           rclone sync docs/ aliyun_oss:${{ secrets.ALIYUN_OSS_BUCKET }} \
+            --exclude "*.png" \
             --progress
           echo "Vite project successfully synced to Aliyun OSS!"

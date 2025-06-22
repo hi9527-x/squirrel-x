@@ -2,26 +2,23 @@ import { Code } from 'squirrel-x'
 import type { SlotsType, VNode } from 'vue'
 import { defineComponent } from 'vue'
 
-import ButtonTest from './test'
-import ButtonTestCode from './test?raw'
+import AlertTest from './test'
+import AlertTestCode from './test?raw'
 
-type Slots = SlotsType<{
-  default?: () => VNode[]
-}>
+type Slots = {}
 type Emits = {}
-
 type Props = {}
 
-const ButtonDemo = defineComponent<Props, Emits, string, Slots>((props, ctx) => {
+const AlertDemo = defineComponent<Props, Emits, string, SlotsType<Slots>>((props, ctx) => {
   return () => {
     return (
       <div class="p-4">
-        <ButtonTest />
+        <AlertTest />
 
         <div class="mt-4 border b-gray rounded b-solid">
           <Code
             language="typescript"
-            code={ButtonTestCode}
+            code={AlertTestCode}
           />
         </div>
       </div>
@@ -31,4 +28,4 @@ const ButtonDemo = defineComponent<Props, Emits, string, Slots>((props, ctx) => 
   props: [],
 })
 
-export default ButtonDemo
+export default AlertDemo
