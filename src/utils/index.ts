@@ -1,3 +1,4 @@
+export * from './capitalizeFirstLetterTL'
 export * from './cn'
 export * from './delay'
 export * from './getCodeBlockInfo'

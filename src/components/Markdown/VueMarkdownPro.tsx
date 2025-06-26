@@ -1,10 +1,11 @@
+import { nameToEmoji } from 'gemoji'
 import type { ElementContent, Text } from 'hast'
 import type { ChildrenRender, CodeProps } from 'squirrel-x'
 import { Alert, Code } from 'squirrel-x'
 import type { SlotsType, VNode } from 'vue'
 import { defineComponent, h } from 'vue'
 
-import { cn, getCodeBlockInfo, getNonEmptySlots, isEmptyElement } from '@/utils'
+import { capitalizeFirstLetterAndLowercaseRest, cn, getCodeBlockInfo, getNonEmptySlots } from '@/utils'
 
 import type { AlterKey } from '../ui/AlertGh'
 import { alterKeys } from '../ui/AlertGh'
@@ -25,6 +26,8 @@ type VueMarkdownProProps = {
   codeProps?: Omit<CodeProps, 'code' | 'language'>
 } & VueMdWorkerParams
 
+const shortcodeRegex = /:([\w+\-]+):/g
+
 const VueMarkdownPro = defineComponent<VueMarkdownProProps, VueMarkdownProEmits, string, SlotsType<VueMarkdownProSlots>>((props, ctx) => {
   return () => {
     return (
@@ -35,6 +38,19 @@ const VueMarkdownPro = defineComponent<VueMarkdownProProps, VueMarkdownProEmits,
               const { tree, childrenRender } = params
               const slotComponents = getNonEmptySlots(ctx.slots.components?.({ tree, childrenRender }))
               if (slotComponents.length) return slotComponents
+
+              if (tree.type === 'text') {
+                return tree.value.replace(shortcodeRegex, (match, shortcodeName) => {
+                  const unicodeEmoji = nameToEmoji[shortcodeName]
+
+                  if (unicodeEmoji) {
+                    return unicodeEmoji
+                  }
+                  else {
+                    return match
+                  }
+                })
+              }
 
               if (tree.type !== 'element') return
               const tagName = tree.tagName
@@ -97,7 +113,13 @@ const VueMarkdownPro = defineComponent<VueMarkdownProProps, VueMarkdownProEmits,
                     }
 
                     if (title[0]?.type === 'text') {
-                      title[0].value = title[0].value.replace(match[0], '')
+                      let text = title[0].value
+                      const regexp = new RegExp(`^(\\[!${match[1]}\\])`, 'i')
+                      text = title[0].value.replace(regexp, '')
+                      if (!text.trim()) {
+                        text = capitalizeFirstLetterAndLowercaseRest(match[1])
+                      }
+                      title[0].value = text
                     }
 
                     const alterContent = [
