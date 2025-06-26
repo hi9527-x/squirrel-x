@@ -71,7 +71,7 @@ const VueMarkdownPro = defineComponent<VueMarkdownProProps, VueMarkdownProEmits,
 
               if (tagName === 'blockquote') {
                 const firstNode = tree.children[1]
-                if (firstNode.type === 'element' && firstNode.children[0].type === 'text') {
+                if (firstNode?.type === 'element' && firstNode.children[0]?.type === 'text') {
                   const value = firstNode.children[0].value
                   const match = value.match(alterStateReg)
                   const type = (match?.[1] || '').toLowerCase()
