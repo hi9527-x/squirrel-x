@@ -84,7 +84,6 @@ import content from './code.md?raw'
 > // npm add github-markdown-css or pnpm add > github-markdown-css
 > import 'github-markdown-css'
 > ```
-```
 
 或者使用开箱即用的[VueMarkdownPro](/markdown/vue-markdown-pro)组件
 
