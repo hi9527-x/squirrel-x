@@ -14,7 +14,7 @@ type Props = {}
 const Guide = defineComponent<Props, Emits, string, Slots>((props, ctx) => {
   return () => {
     return (
-      <div class="min-w-240 flex justify-center p-5">
+      <div class="p-4">
         <VueMarkdownPro content={content} class="flex-1" />
       </div>
     )
