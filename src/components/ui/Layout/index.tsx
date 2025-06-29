@@ -32,7 +32,7 @@ export default defineComponent<Props, Emits, string, SlotsType<Slots>>((props, c
       >
         <div
           class={cn(
-            'pos-fixed left-0px top-0px z-9999',
+            'pos-fixed left-0px top-0px z-9999 overflow-y-auto',
             'bg-gray-50',
             'w-[var(--sx-sidebar-width)] h-100vh p-4',
             '2xl:pl-[max(16px,calc((100vw-var(--sx-layout-max-width)-var(--sx-content-gap)*2)/2))]',
