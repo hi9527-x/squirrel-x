@@ -19,7 +19,7 @@ import type { SlotsType, VNode } from 'vue'
 import { defineComponent, onMounted, ref, watch } from 'vue'
 
 import { useViewFullscreen } from '@/components/hook'
-import { cn, delay, isSupportFontFamily, replaceClassNames } from '@/utils'
+import { cn, isSupportFontFamily, replaceClassNames } from '@/utils'
 import IconCheck from '~icons/lucide/check'
 import IconCopy from '~icons/lucide/copy'
 import IconExpand from '~icons/lucide/expand'
@@ -120,8 +120,6 @@ hljs.registerLanguage('csharp', csharp)
 let isHasFont = false
 const loadFont = pDebounce(async () => {
   try {
-    // await delay(5000)
-    // return false
     if (isHasFont) return true
     const family = 'Jetbrains Mono'
     // const family = 'SourceCodePro'
@@ -129,7 +127,6 @@ const loadFont = pDebounce(async () => {
     isHasFont = isSupportFontFamily(family)
 
     if (isHasFont) return true
-    await delay(2000)
     const fontFace = new FontFace(family, `url(${fontCdn})`)
     await fontFace.load()
     document.fonts.add(fontFace)

@@ -259,6 +259,4 @@ A note[^1]
 
 ## html
 
-默认关闭，需手动打开
-
 <p>markdown html内容<p>

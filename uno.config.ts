@@ -3,19 +3,26 @@ import {
   defineConfig,
   presetAttributify,
   presetIcons,
+  presetMini,
   presetWind3,
   transformerDirectives,
 } from 'unocss'
 
 export default defineConfig({
-  shortcuts: [],
+  shortcuts: {},
+  rules: [],
   theme: {
     colors: {
       primary: '#1677ff',
     },
   },
   presets: [
-    presetWind3(),
+    presetMini({
+      preflight: 'on-demand',
+    }),
+    // presetWind3({
+    //   // preflight: false,
+    // }),
     presetAttributify({
       preflights: {
 
