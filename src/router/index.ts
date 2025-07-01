@@ -92,6 +92,14 @@ const router = createRouter({
       component: () => import('@/views/codeHljs/index.vue'),
     },
     {
+      path: '/codeEdit',
+      name: 'codeEdit',
+      meta: {
+        title: '代码编辑',
+      },
+      component: () => import('@/views/codeEdit'),
+    },
+    {
       path: '/changelog',
       name: 'changelog',
       meta: {

@@ -1,3 +1,4 @@
+export { CodeEdit, CodeEditPro } from './CodeEdit'
 export type { CodeProps } from './CodeHljs'
 export { default as Code } from './CodeHljs'
 export type { ChildrenRender } from './Markdown/MarkdownToVnode'
