@@ -152,7 +152,8 @@ const content = `
 
 ```vue
 <script setup lang="ts">
-import { VueMarkdownPro, Mermaid } from 'squirrel-x'
+import { VueMarkdownPro } from 'squirrel-x'
+import Mermaid from 'squirrel-x/Mermaid'
 
 import markdown from './mermaid.md?raw'
 </script>

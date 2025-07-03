@@ -24,7 +24,7 @@ type VueMarkdownProEmits = {}
 type VueMarkdownProProps = {
   class?: string
   codeProps?: Omit<CodeProps, 'code' | 'language'>
-} & VueMdWorkerParams
+} & Omit<VueMdWorkerParams, 'uid'>
 
 const shortcodeRegex = /:([\w+\-]+):/g
 

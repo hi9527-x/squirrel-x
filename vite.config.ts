@@ -25,30 +25,42 @@ export default defineConfig(({ mode }) => {
     conditions: ['worker', ...defaultClientConditions],
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      'squirrel-x': fileURLToPath(new URL('./src/components/index.ts', import.meta.url)),
+      'squirrel-x': fileURLToPath(new URL('./src/components', import.meta.url)),
     },
   }
   if (mode === 'lib') {
     plugins.push(dts({
       insertTypesEntry: true,
+      outDir: 'dist/types',
       rollupTypes: true,
-      tsconfigPath: 'tsconfig.app.json',
+      tsconfigPath: './tsconfig.app.json',
+
     }))
     return {
       plugins,
       resolve,
       build: {
         lib: {
-          entry: path.resolve(__dirname, 'src/components/index.ts'),
+          // entry: path.resolve(__dirname, 'src/components/index.ts'),
+          entry: {
+            'squirrel-x': path.resolve(__dirname, 'src/components/index.ts'),
+            'squirrel-x.mermaid': path.resolve(__dirname, 'src/components/Mermaid/index.ts'),
+          },
           name: 'squirrel-x',
-          fileName: format => `squirrel-x.${format}.js`,
-          formats: ['es', 'umd'],
+          fileName: (format, entryName) => {
+            return `${entryName}.js`
+          },
+          formats: ['es'],
         },
+        // 拆分css
         // cssCodeSplit: true,
         rollupOptions: {
           external: ['vue', 'mermaid'],
           output: {
-            // manualChunks: (id) => {},
+            // manualChunks: (id) => {
+
+            //   return null
+            // },
             globals: {
               vue: 'Vue',
               mermaid: 'mermaid',

@@ -1,8 +1,8 @@
 import { watchDebounced } from '@vueuse/core'
 import interact from 'interactjs'
-import mermaid from 'mermaid'
-import { Button, Empty } from 'squirrel-x'
-import { defineComponent, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { Mermaid } from 'mermaid'
+import { Empty } from 'squirrel-x'
+import { defineComponent, onUnmounted, ref, watch } from 'vue'
 
 import { cn } from '@/utils'
 import IconExpand from '~icons/lucide/expand'
@@ -13,6 +13,14 @@ import IconZoomOut from '~icons/lucide/zoom-out'
 import { useViewFullscreen } from '../hook'
 
 const midCache: Record<string, string> = {}
+let mermaidInstance: Mermaid | null = null
+
+const getMermaidInstance = async () => {
+  if (!mermaidInstance) {
+    mermaidInstance = (await import('mermaid')).default
+  }
+  return mermaidInstance
+}
 
 export type MermaidProps = {
   code?: string
@@ -21,7 +29,8 @@ export type MermaidProps = {
   }
 }
 let count = 0
-const Mermaid = defineComponent<MermaidProps>((props, ctx) => {
+
+const VueMermaid = defineComponent<MermaidProps>((props, ctx) => {
   const svtString = ref('')
   const refChartEle = ref<HTMLElement>()
 
@@ -99,6 +108,7 @@ const Mermaid = defineComponent<MermaidProps>((props, ctx) => {
     }
 
     try {
+      const mermaid = await getMermaidInstance()
       const chart = await mermaid.parse(code, { suppressErrors: false })
       if (!chart) return
 
@@ -170,4 +180,4 @@ const Mermaid = defineComponent<MermaidProps>((props, ctx) => {
   props: ['code'],
 })
 
-export default Mermaid
+export default VueMermaid

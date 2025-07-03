@@ -15,7 +15,7 @@ globalThis.addEventListener('message', (event) => {
   try {
     const output = v.parse(WorkerMarkdownSchema, event.data)
 
-    const { content, remarkRehypeOptions } = output
+    const { content, remarkRehypeOptions, uid } = output
 
     const mdast = fromMarkdown(content, {
       extensions: [math(), gfm(), frontmatter(['yaml', 'toml'])],
@@ -28,6 +28,7 @@ globalThis.addEventListener('message', (event) => {
     globalThis.postMessage({
       hast,
       mdast,
+      uid,
     })
   }
   catch (error) {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Button, Katex, VueMarkdownPro, Mermaid } from 'squirrel-x'
+import { Button, Katex, VueMarkdownPro } from 'squirrel-x'
+import Mermaid from 'squirrel-x/Mermaid'
 import { ref } from 'vue'
 
 import markdown from './base.md?raw'

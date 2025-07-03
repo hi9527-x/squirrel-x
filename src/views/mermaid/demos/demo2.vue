@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Button, Code, Mermaid } from 'squirrel-x'
+import { Button, Code } from 'squirrel-x'
+import Mermaid from 'squirrel-x/Mermaid'
 import { ref } from 'vue'
 
 const code = `

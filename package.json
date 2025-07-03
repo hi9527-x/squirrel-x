@@ -1,7 +1,7 @@
 {
   "name": "squirrel-x",
   "type": "module",
-  "version": "0.1.6",
+  "version": "0.1.6-beta.3",
   "license": "MIT",
   "homepage": "http://squirrelx.hi9527.ren/",
   "repository": {
@@ -10,15 +10,17 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/squirrel-x.d.ts",
-      "import": "./dist/squirrel-x.es.js"
+      "types": "./dist/types/squirrel-x.d.ts",
+      "import": "./dist/squirrel-x.js"
+    },
+    "./Mermaid": {
+      "types": "./dist/types/squirrel-x.mermaid.d.ts",
+      "import": "./dist/squirrel-x.mermaid.js"
     },
     "./style.css": "./dist/squirrel-x.css"
   },
-  "main": "./dist/squirrel-x.es.js",
-  "module": "./dist/squirrel-x.es.js",
-  "unpkg": "./dist/squirrel-x.umd.js",
-  "types": "./dist/squirrel-x.d.ts",
+  "main": "./dist/squirrel-x.js",
+  "module": "./dist/squirrel-x.js",
   "files": [
     "dist"
   ],
@@ -60,7 +62,6 @@
     "remark-rehype": "^11.1.2",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",
-    "uuid": "^11.1.0",
     "valibot": "^1.1.0",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
