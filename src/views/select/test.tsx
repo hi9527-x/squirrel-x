@@ -14,13 +14,12 @@ const SelectTest = defineComponent<Props, Emits, string, Slots>((props, ctx) => 
     return (
       <div>
         <Select
+          placeholder="请选择！"
+          class="w-120px"
           size="small"
-          options={[
-            { label: '选项1', value: 'opt1' },
-            { label: '选项2', value: 'opt2' },
-            { label: '选项3', value: 'opt3' },
-            { label: '选项4', value: 'opt4' },
-          ]}
+          options={[...Array.from({ length: 100 }).keys()].map((value) => {
+            return { label: `选项-${value}`, value: value.toString() }
+          })}
         />
       </div>
     )

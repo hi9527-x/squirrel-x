@@ -16,7 +16,6 @@ const content = `
       <Popover
         v-if="tree.type === 'element' && tree.tagName === 'a'"
         trigger="click"
-        placement="bottom-start"
       >
         <template #content>
           <div class="flex items-center">
@@ -25,18 +24,22 @@ const content = `
               target="_blank"
               :href="tree.properties.href as string"
             >
-              <Button variant="link">
+              <Button
+                variant="link"
+                color="primary"
+                size="small"
+              >
                 <IconArrowOutUpRight />
               </Button>
+
             </a>
           </div>
         </template>
         <Button
           variant="link"
           color="primary"
-          size="small"
         >
-          <component :is="childrenRender(tree.children)" />
+          <component :is="childrenRender()" />
         </Button>
       </Popover>
     </template>

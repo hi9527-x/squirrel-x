@@ -2,11 +2,11 @@ import type { ElementContent, Root, RootContent } from 'hast'
 import type { SlotsType, VNode } from 'vue'
 import { defineComponent, h } from 'vue'
 
-import { isEmptyElement } from '@/utils'
+import { getNonEmptySlots, isArrayEmpty } from '@/utils'
 
-type DisplayNode = RootContent | Root
+export type DisplayNode = RootContent | Root
 
-export type ChildrenRender = (tree: DisplayNode | DisplayNode[]) => VNode
+export type ChildrenRender = () => VNode
 
 type MarkdownNodeRenderParams = { tree: ElementContent, childrenRender: ChildrenRender }
 
@@ -21,7 +21,7 @@ export type MarkdownToVnodeProps = {
 }
 
 const MarkdownToVnode = defineComponent<MarkdownToVnodeProps, MarkdownToVnodeEmits, string, SlotsType<MarkdownToVnodeSlots>>((props, ctx) => {
-  const render: ChildrenRender = (tree) => {
+  const render = (tree: DisplayNode | DisplayNode[], child: boolean): VNode => {
     const currentAst = Array.isArray(tree) ? tree : [tree]
 
     return (
@@ -30,16 +30,23 @@ const MarkdownToVnode = defineComponent<MarkdownToVnodeProps, MarkdownToVnodeEmi
           const type = tree.type
           if (type === 'doctype') return null
 
-          if (type === 'root') return render(tree.children)
-
-          if (type === 'element' && props.disallowedElements?.includes(tree.tagName)) return null
-
-          const slotCustomRender = ctx.slots.components?.({ tree, childrenRender: render })
-          const customRenderArr = slotCustomRender?.filter(ele => !isEmptyElement(ele))?.map(ele => h(ele)) ?? []
-          if (customRenderArr.length) return customRenderArr
+          if (type === 'root') return render(tree.children, true)
 
           if (type === 'element') {
-            return h(tree.tagName, { ...tree.properties, class: tree.properties?.className || '' }, render(tree.children))
+            if (props.disallowedElements?.includes(tree.tagName)) return null
+            if (child) {
+              const slotCustomRender = ctx.slots.components?.({ tree, childrenRender: () => {
+                if (!isArrayEmpty(tree.children)) {
+                  return render(tree.children, true)
+                }
+                return render(tree, false)
+              } })
+
+              const customRenderArr = getNonEmptySlots(slotCustomRender)
+              if (customRenderArr.length) return customRenderArr
+            }
+
+            return h(tree.tagName, { ...tree.properties, class: tree.properties?.className || '' }, render(tree.children, true))
           }
 
           if (type === 'text') {
@@ -55,7 +62,7 @@ const MarkdownToVnode = defineComponent<MarkdownToVnodeProps, MarkdownToVnodeEmi
   return () => {
     if (!props.hast) return
 
-    return render(props.hast)
+    return render(props.hast, true)
   }
 }, {
   props: ['hast', 'disallowedElements'],

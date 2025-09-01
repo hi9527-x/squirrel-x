@@ -1,7 +1,6 @@
-import type { SlotsType, VNode } from 'vue'
+import type { SlotsType } from 'vue'
 import { defineComponent } from 'vue'
-import type { RouteRecordRaw } from 'vue-router'
-import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import SidebarView from './SidebarView'
 

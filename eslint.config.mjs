@@ -13,7 +13,7 @@ export default antfu({
     // if后一定要换行，关闭
     'antfu/if-newline': ['off'],
     // 顶层需要是function关闭
-    'antfu/top-level-function': ['off'],
+    // 'antfu/top-level-function': ['off'],
 
     // vue组件属性，每一个都需要换行
     'vue/max-attributes-per-line': ['error', {

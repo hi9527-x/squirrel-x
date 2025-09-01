@@ -14,7 +14,7 @@ const code = `
 
 const content = ref('')
 
-const handleStart = () => {
+function handleStart() {
   content.value = ''
   let currentIndex = 0
   const intervalId = setInterval(() => {

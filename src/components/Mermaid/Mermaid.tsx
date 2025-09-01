@@ -1,9 +1,9 @@
 import { watchDebounced } from '@vueuse/core'
 import interact from 'interactjs'
 import type { Mermaid } from 'mermaid'
-import { Empty } from 'squirrel-x'
 import { defineComponent, onUnmounted, ref, watch } from 'vue'
 
+import { Empty } from '@/components'
 import { cn } from '@/utils'
 import IconExpand from '~icons/lucide/expand'
 import IconRotateCcw from '~icons/lucide/rotate-ccw'
@@ -15,7 +15,7 @@ import { useViewFullscreen } from '../hook'
 const midCache: Record<string, string> = {}
 let mermaidInstance: Mermaid | null = null
 
-const getMermaidInstance = async () => {
+async function getMermaidInstance() {
   if (!mermaidInstance) {
     mermaidInstance = (await import('mermaid')).default
   }

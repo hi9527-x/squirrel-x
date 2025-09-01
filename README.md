@@ -136,7 +136,7 @@ const content = `
           color="primary"
           size="small"
         >
-          <component :is="childrenRender(tree.children)" />
+          <component :is="childrenRender()" />
         </Button>
       </Popover>
     </template>

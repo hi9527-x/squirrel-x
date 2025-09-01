@@ -1,15 +1,16 @@
 import { nameToEmoji } from 'gemoji'
-import type { ElementContent, Text } from 'hast'
-import type { ChildrenRender, CodeProps } from 'squirrel-x'
-import { Alert, Code } from 'squirrel-x'
+import type { ElementContent, RootContent, Text } from 'hast'
 import type { SlotsType, VNode } from 'vue'
 import { defineComponent, h } from 'vue'
 
+import type { ChildrenRender, CodeProps } from '@/components'
+import { Alert, Code } from '@/components'
 import { capitalizeFirstLetterAndLowercaseRest, cn, getCodeBlockInfo, getNonEmptySlots } from '@/utils'
 
 import type { AlterKey } from '../ui/AlertGh'
 import { alterKeys } from '../ui/AlertGh'
 import type { VueMdWorkerParams } from './common'
+import MarkdownToVnode from './MarkdownToVnode'
 import ghStyles from './styles/github.module.css'
 import type { VueMarkdownWorkerSlots } from './VueMarkdownWorker'
 import VueMarkdownWorker from './VueMarkdownWorker'
@@ -19,6 +20,7 @@ const alterStateReg = new RegExp(`^\\[!(${alterKeys.join('|')})\\]\n?`, 'i')
 type VueMarkdownProSlots = VueMarkdownWorkerSlots & {
   codeBlock?: (params: { language: string, code: string }) => VNode[]
 }
+
 type VueMarkdownProEmits = {}
 
 type VueMarkdownProProps = {
@@ -78,7 +80,7 @@ const VueMarkdownPro = defineComponent<VueMarkdownProProps, VueMarkdownProEmits,
 
                   if (match && type) {
                     const content: Text[] = []
-                    const title: Parameters<ChildrenRender>[0] = []
+                    const title: RootContent[] = []
                     let lineIndex = 0
                     for (; lineIndex < firstNode.children.length; lineIndex++) {
                       const element = firstNode.children[lineIndex]
@@ -151,8 +153,14 @@ const VueMarkdownPro = defineComponent<VueMarkdownProProps, VueMarkdownProEmits,
                         class="my-2"
                         type={type as AlterKey}
                         v-slots={{
-                          message: () => title.length ? <span>{childrenRender(title)}</span> : null,
-                          description: () => alterContent.length ? childrenRender(alterContent) : null,
+                          message: () => title.length
+                            ? (
+                                <span>
+                                  <MarkdownToVnode hast={{ type: 'root', children: title }} />
+                                </span>
+                              )
+                            : null,
+                          description: () => alterContent.length ? <MarkdownToVnode hast={{ type: 'root', children: alterContent }} /> : null,
                         }}
                       />
                     )

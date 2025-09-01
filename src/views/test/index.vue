@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import 'github-markdown-css'
-
-import { VueMarkdownPro, VueMarkdownWorker } from 'squirrel-x'
+import { VueMarkdownPro } from 'squirrel-x'
+import { provide, ref } from 'vue'
 
 import content from './markdown.md?raw'
+
+const language = ref('markdown')
+
+provide('language', language)
 </script>
 
 <template>
-  <VueMarkdownWorker content="# 标题1" />
-  <br>
-
-  <VueMarkdownWorker content="# 标题22" />
+  <div class="h-full flex">
+    <VueMarkdownPro
+      :content="content"
+    />
+  </div>
 </template>
 
 <style module="Css" lang="less">

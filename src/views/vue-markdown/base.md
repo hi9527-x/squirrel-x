@@ -17,10 +17,10 @@
 <sx-code src="./demos/VueMarkdownHook.vue" showCode="./demos/VueMarkdownHook.vue,./demos/code.md" ></sx-code>
 
 #### slots
+
 `VueMarkdownHook`和`VueMarkdownWorker`异步组件都有的插槽
 
 `fallback` (`(error: Error) => VNode[]`) -- 解析报错的插槽
-
 
 > [!WARNING] 注意
 > 这里使用的`VueMarkdown`和`VueMarkdownHook`,均不带任何样式,只做了把markdown内容在vue上渲染出来
@@ -44,17 +44,18 @@ markdown组件的入参
   (`RemarkRehypeOptions`, 可选) -- [remark-rehype入参](https://github.com/remarkjs/remark-rehype?tab=readme-ov-file#options)
 - allowedElements (`Array<string>`) -- 允许的element标签名
 
-
-
 ### slots
 
 `components` (`(params: { tree: ElementContent, childrenRender: ChildrenRender }) => VNode[]`) -- 自定义组件渲染的插槽
 
-
 ## markdown语法自定义组件渲染
 
-例如因**安全**需要，
+### 链接标签`<a />`
+
+例如，因**安全**需要，
 
 - **链接**不能直接跳转，需要做一个中间弹窗，进行免责提醒
 
 <sx-code src="./demos/CustomLink.vue" showCode="./demos/CustomLink.vue" ></sx-code>
+
+### 图片`<img />`

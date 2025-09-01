@@ -1,9 +1,9 @@
-import type { ChildrenRender, HElementContent } from 'squirrel-x'
-import { VueMarkdownPro } from 'squirrel-x'
 import * as v from 'valibot'
 import type { SlotsType, VNode } from 'vue'
 import { defineComponent, h } from 'vue'
 
+import type { ChildrenRender, HElementContent } from '@/components'
+import { VueMarkdownPro } from '@/components'
 import { getFileExtension, getFileName } from '@/utils'
 
 import Preview from './Preview'

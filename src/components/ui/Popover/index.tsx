@@ -42,13 +42,13 @@ const Popover = defineComponent<PopoverProps, PopoverEmits, string, PopoverSlots
     middleware: [
       offset(),
       shift(),
-      flip(),
+      flip({
+        fallbackStrategy: 'initialPlacement',
+      }),
       size({
         apply({ availableHeight, availableWidth, elements }) {
           Object.assign(elements.floating.style, {
-            maxHeight: (availableHeight - 32) >= elements.floating.scrollHeight ? '' : `${availableHeight - 32}px`,
-            maxWidth: (availableWidth - 32) >= elements.floating.scrollWidth ? '' : `${availableWidth - 32}px`,
-            overflow: 'auto',
+            height: (availableHeight - 32) > elements.floating.scrollHeight ? '' : `${availableHeight - 32}px`,
           })
         },
       }),
@@ -117,24 +117,21 @@ const Popover = defineComponent<PopoverProps, PopoverEmits, string, PopoverSlots
         })}
 
         <Teleport to={document.body} defer>
-          <div>
-            <div
-              onMouseenter={handleTargetEnter}
-              onMouseleave={handleTargetLeave}
-              class={cn(
-                isPositioned.value ? 'flex' : 'hidden',
-                'shadow',
-                'bg-white rounded p-2',
-                'flex-col gap-1',
-                'text-3.5',
-                'z-9527',
-                'box-border',
-              )}
-              ref={floating}
-              style={open.value ? floatingStyles.value : ''}
-            >
-              {ctx.slots.content?.()}
-            </div>
+          <div
+            onMouseenter={handleTargetEnter}
+            onMouseleave={handleTargetLeave}
+            class={cn(
+              isPositioned.value ? 'block' : 'hidden',
+              'shadow',
+              'bg-white rounded',
+              'text-3.5',
+              'z-9527',
+              'overflow-y-hidden',
+            )}
+            ref={floating}
+            style={open.value ? floatingStyles.value : ''}
+          >
+            {ctx.slots.content?.()}
           </div>
 
         </Teleport>

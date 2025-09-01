@@ -53,6 +53,10 @@ _斜体_
 
 - And here's the third list item.
 
+## 图片
+
+![](https://www.baidu.com/img/PCtm_d9c8750bed0b3c7d089fa7d55720d6cf.png)
+
 ## Markdown 围栏代码块
 
 ### json

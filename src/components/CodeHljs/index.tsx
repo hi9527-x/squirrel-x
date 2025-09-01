@@ -14,10 +14,10 @@ import typescript from 'highlight.js/lib/languages/typescript'
 import xml from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
 import pDebounce from 'p-debounce'
-import { Button, Select } from 'squirrel-x'
 import type { SlotsType, VNode } from 'vue'
-import { defineComponent, onMounted, ref, watch } from 'vue'
+import { defineComponent, h, onMounted, ref, watch } from 'vue'
 
+import { Button, Select } from '@/components'
 import { useViewFullscreen } from '@/components/hook'
 import { cn, isSupportFontFamily, replaceClassNames } from '@/utils'
 import IconCheck from '~icons/lucide/check'
@@ -205,8 +205,8 @@ const CodeRender = defineComponent<CodeProps, CodeEmits, string, CodeSlots>((pro
       <pre
         class={cn(
           'font-sans text-3.5! line-height-normal',
-          'px-4 py-2! bg-gray-50!',
-          (betterFont && fontLoad.value)
+          'px-4 py-1! bg-gray-50!',
+          (betterFont)
             ? cn(
                 'font-[Jetbrains_Mono]!',
                 // 'font-[SourceCodePro]!',
@@ -245,7 +245,7 @@ const CodeRender = defineComponent<CodeProps, CodeEmits, string, CodeSlots>((pro
     return (
       <div
         class={cn(
-          'bg-gray-50 rounded-md bg-gray-50',
+          'bg-gray-50 rounded-md bg-gray-50 py-1',
           props.class,
           className.value,
         )}
@@ -262,44 +262,24 @@ const CodeRender = defineComponent<CodeProps, CodeEmits, string, CodeSlots>((pro
 
               {toolbarConfig.language && (
                 <Select
-                  class=""
                   bordered={false}
-                  options={languages.map((it) => {
-                    return { label: it, value: it }
-                  })}
+                  v-model:value={language.value}
+                  options={languages.map(value => ({ label: value, value }))}
                   size="small"
-                  value={language.value}
-                  onChange={(val) => {
-                    if (typeof val === 'string') {
-                      language.value = val
-                    }
-                  }}
                 />
+
               )}
             </div>
 
-            <div>
+            <div class="flex gap-2">
               {toolbarConfig.lineNum && (
                 <Button
                   variant="text"
                   size="small"
                   onClick={() => { showLineNum.value = !showLineNum.value }}
+
                 >
-                  {showLineNum.value
-                    ? (
-                        <IconToggleLeft
-                          class={cn(
-                            'text-gray-500',
-                          )}
-                        />
-                      )
-                    : (
-                        <IconToggleRight
-                          class={cn(
-                            'text-gray-500',
-                          )}
-                        />
-                      )}
+                  {h(showLineNum.value ? IconToggleLeft : IconToggleRight, { class: 'text-gray-500' })}
                 </Button>
               )}
 
@@ -308,6 +288,7 @@ const CodeRender = defineComponent<CodeProps, CodeEmits, string, CodeSlots>((pro
                   variant="text"
                   size="small"
                   onClick={() => { toggle() }}
+
                 >
                   <IconExpand class="text-gray-500" />
                 </Button>
@@ -319,21 +300,7 @@ const CodeRender = defineComponent<CodeProps, CodeEmits, string, CodeSlots>((pro
                   size="small"
                   onClick={() => { copy(props.code || '') }}
                 >
-                  {copied.value
-                    ? (
-                        <IconCheck
-                          class={cn(
-                            'text-gray-500',
-                          )}
-                        />
-                      )
-                    : (
-                        <IconCopy
-                          class={cn(
-                            'text-gray-500',
-                          )}
-                        />
-                      )}
+                  {h(copied.value ? IconCheck : IconCopy, { class: 'text-gray-500' })}
                 </Button>
               )}
 

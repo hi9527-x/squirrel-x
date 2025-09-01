@@ -43,7 +43,7 @@ export const WorkerMarkdownSchema = v.object({
 export type VueMdWorkerParams = v.InferInput<typeof WorkerMarkdownSchema>
 
 let md2hastWorker: Worker | null = null
-export const getMd2hastWorkerInstance = () => {
+export function getMd2hastWorkerInstance() {
   if (!md2hastWorker) {
     md2hastWorker = new MarkdownToHast({ name: 'fromMdWorker' })
   }

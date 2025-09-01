@@ -8,7 +8,7 @@ import IconLightbulb from '~icons/lucide/lightbulb'
 import IconMessageSquareWarning from '~icons/lucide/message-square-warning'
 import IconTriangleAlert from '~icons/lucide/triangle-alert'
 
-type AlertGhSlots = {
+export type AlertGhSlots = {
   description?: () => VNode[]
   message?: () => VNode[]
 }
@@ -46,7 +46,7 @@ const alterStateMap: Record<AlterKey, { icon: VNode, class: string, classTitle: 
   },
 }
 
-type AlertGhProps = {
+export type AlertGhProps = {
   type?: AlterKey
   description?: string
   message?: string

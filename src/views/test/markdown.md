@@ -1,9 +1,20 @@
+## Alerts
+
+> [!NOTE]
+> Useful information that users should know, even when skimming content.
+
+> [!TIP]
+> Helpful advice for doing things better or more easily.
+
+> [!IMPORTANT]
+> Key information users need to know to achieve their goal.
+
 > [!WARNING]
-> 没有直接的内容
->
-> 123
-> 321
+> Urgent info that needs immediate user attention to avoid problems.
 
-去露营了！ :tent: 很快回来。
+> [!CAUTION]
+> Advises about risks or negative outcomes of certain actions.
 
-真好笑！ :joy:
+## 图片
+
+![](https://www.baidu.com/img/PCtm_d9c8750bed0b3c7d089fa7d55720d6cf.png)

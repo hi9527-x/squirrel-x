@@ -7,7 +7,7 @@ import markdown from './base.md?raw'
 
 const displayMarkdown = ref(markdown)
 
-const handleStart = () => {
+function handleStart() {
   if (!markdown) return
   displayMarkdown.value = ''
   let currentIndex = 0
@@ -25,7 +25,6 @@ const handleStart = () => {
 
 <template>
   <Button
-    variant="outlined"
     @click="handleStart"
   >
     开始
