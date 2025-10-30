@@ -6,7 +6,7 @@ import { bracketMatching, LanguageDescription } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
 import { closeSearchPanel, findNext, findPrevious, openSearchPanel, search, searchKeymap, SearchQuery, setSearchQuery } from '@codemirror/search'
 import type { Extension } from '@codemirror/state'
-import { EditorView, keymap, lineNumbers } from '@codemirror/view'
+import { drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view'
 import { useClipboard } from '@vueuse/core'
 import type { SlotsType } from 'vue'
 import { computed, defineComponent, h, provide, ref, shallowRef, Teleport, toValue, watch } from 'vue'
@@ -88,6 +88,7 @@ const CodeEditPro = defineComponent<CodeEditProProps, CodeEditProEmits, string, 
 
   const extensions = computed(() => {
     const extensions: Extension[] = [
+      drawSelection(),
       history(),
       search({
         createPanel(view) {
