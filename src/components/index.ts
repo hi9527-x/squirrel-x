@@ -1,5 +1,8 @@
+// code edit
 export type { CodeEditProSlots } from './CodeEdit'
-export { CodeEditPro } from './CodeEdit'
+export { CodeEdit, CodeEditPro } from './CodeEdit'
+
+// code hljs
 export type { CodeProps } from './CodeHljs'
 export { default as Code } from './CodeHljs'
 

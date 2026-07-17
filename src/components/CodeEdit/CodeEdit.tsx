@@ -1,119 +1,97 @@
 import type { Extension } from '@codemirror/state'
-import { Annotation, StateEffect } from '@codemirror/state'
+import { EditorState } from '@codemirror/state'
 import type { ViewUpdate } from '@codemirror/view'
-import { EditorView } from '@codemirror/view'
+import { EditorView, placeholder } from '@codemirror/view'
 import type { SlotsType } from 'vue'
-import { defineComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, defineComponent, ref } from 'vue'
 
-import { cn, isArrayEmpty, safeArray } from '@/utils'
+import { cn, safeArray } from '@/utils'
+
+import type { UseCodeMirror } from './Types'
+import { useCodeMirror } from './useCodeMirror'
 
 type CodeEditSlots = {}
 export type CodeEditEmits = {
   'update:value': (value: string) => void
+  'update': (viewUpdate: ViewUpdate) => void
   'focus': () => void
   'blur': () => void
   'click': () => void
+  'loaded': (editorView: EditorView) => void
 }
 export type CodeEditProps = {
   value?: string
   extensions?: Extension[]
+  placeholder?: string
+  readOnly?: boolean
+  editable?: boolean
   class?: string
-  onLoaded?: (editorView: EditorView) => void
 }
 
-export type CodeInsertFun = (params: { from: number, to?: number, value: string }) => void
+export type CodeEditInsertParams = { from: number, to?: number, value: string }
+export type CodeEditReplaceParams = { from: number, to: number, value: string }
+export type CodeEditExpose = {
+  getEditorView: () => EditorView | null
+  focus: () => void
+  blur: () => void
+  insert: (params: CodeEditInsertParams) => void
+  replace: (params: CodeEditReplaceParams) => void
+  clear: () => void
+}
 
 const CodeEdit = defineComponent<CodeEditProps, CodeEditEmits, string, SlotsType<CodeEditSlots>>((props, ctx) => {
   const refCodeEditEle = ref<HTMLElement>()
-  let editorView: EditorView | null = null
 
-  const External = Annotation.define<boolean>()
-
-  const updateListener = EditorView.updateListener.of((vu: ViewUpdate) => {
-    if (vu.docChanged && !vu.transactions.some(tr => tr.annotation(External))) {
-      const value = vu.state.doc.toString()
-      ctx.emit('update:value', value)
-    }
-  })
-
-  const getDefaultExtension = () => {
-    return [
-      updateListener,
+  // 把 placeholder / readOnly / editable 这些"业务扩展"拼进 extensions，
+  // useCodeMirror 只负责 value + extensions + callbacks 三件事。
+  const innerExtensions = computed<Extension[]>(() => {
+    const list: (Extension | null | false)[] = [
+      ...safeArray(props.extensions),
+      props.placeholder ? placeholder(props.placeholder) : null,
+      EditorState.readOnly.of(!!props.readOnly),
+      EditorView.editable.of(props.editable !== false),
     ]
-  }
-
-  let initialExtensions = false
-
-  const loadExtension = (view = editorView) => {
-    if (!view) return
-    const extensions = safeArray(props.extensions)
-
-    if (!extensions.length) return
-
-    const defaultExtensions = getDefaultExtension()
-    const curExtensions = [
-      ...extensions,
-      ...defaultExtensions,
-    ]
-
-    view.dispatch({
-      effects: StateEffect.reconfigure.of(curExtensions),
-    })
-  }
-
-  watch(() => props.extensions, (extensions) => {
-    if (!initialExtensions || isArrayEmpty(extensions)) return
-    loadExtension()
-  }, {})
-
-  watch([() => props.value], ([val]) => {
-    if (!editorView || val === undefined) return
-
-    const curVal = editorView.state.doc.toString()
-    if (val !== curVal) {
-      editorView.dispatch({
-        changes: { from: 0, to: curVal.length, insert: val },
-      })
-    }
+    return list.filter(Boolean) as Extension[]
   })
 
-  const handleEventFocus = () => {
-    ctx.emit('focus')
+  const cmProps: UseCodeMirror = {
+    value: () => props.value,
+    extensions: innerExtensions,
+    syncState: false,
+    container: refCodeEditEle,
+    onCreateEditor: editorView => ctx.emit('loaded', editorView),
+    onChange: value => ctx.emit('update:value', value),
+    onUpdate: (vu) => {
+      ctx.emit('update', vu)
+      if (vu.focusChanged) {
+        if (vu.view.hasFocus) {
+          ctx.emit('focus')
+        }
+        else {
+          ctx.emit('blur')
+        }
+      }
+    },
   }
 
-  const handleEventBlur = () => {
-    ctx.emit('blur')
-  }
+  const { view, dispatchExternal } = useCodeMirror(cmProps)
 
-  const handleEventClick = () => {
-    ctx.emit('click')
-  }
-
-  onMounted(async () => {
-    if (!refCodeEditEle.value) return
-    editorView = new EditorView({
-      extensions: getDefaultExtension(),
-      parent: refCodeEditEle.value,
-      doc: props.value || '',
-    })
-
-    await nextTick()
-    loadExtension(editorView)
-    initialExtensions = true
-
-    editorView.contentDOM.addEventListener('focus', handleEventFocus)
-    editorView.contentDOM.addEventListener('blur', handleEventBlur)
-    editorView.contentDOM.addEventListener('click', handleEventClick)
-  })
-
-  onUnmounted(() => {
-    if (!editorView) return
-    editorView.contentDOM.removeEventListener('focus', handleEventFocus)
-    editorView.contentDOM.removeEventListener('blur', handleEventBlur)
-    editorView.contentDOM.removeEventListener('click', handleEventClick)
-    editorView.destroy?.()
-    editorView = null
-  })
+  ctx.expose({
+    getEditorView: () => view.value ?? null,
+    focus: () => view.value?.focus(),
+    blur: () => view.value?.contentDOM.blur(),
+    insert: ({ from, to, value }: CodeEditInsertParams) => {
+      dispatchExternal({ from, to: to ?? from, insert: value })
+    },
+    replace: ({ from, to, value }: CodeEditReplaceParams) => {
+      dispatchExternal({ from, to, insert: value })
+    },
+    clear: () => {
+      const v = view.value
+      if (!v) return
+      dispatchExternal({ from: 0, to: v.state.doc.length, insert: '' })
+    },
+  } satisfies CodeEditExpose)
 
   return () => {
     return (
@@ -122,13 +100,15 @@ const CodeEdit = defineComponent<CodeEditProps, CodeEditEmits, string, SlotsType
         class={cn(
           props.class,
         )}
+        onClick={() => ctx.emit('click')}
       >
       </div>
     )
   }
 }, {
-  props: ['value', 'extensions', 'class'],
+  props: ['value', 'extensions', 'placeholder', 'readOnly', 'editable', 'class'],
   inheritAttrs: false,
+  // model: { prop: 'value', event: 'update:value' },
 })
 
 export default CodeEdit

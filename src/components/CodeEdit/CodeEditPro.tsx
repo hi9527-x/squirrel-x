@@ -6,7 +6,8 @@ import { bracketMatching, LanguageDescription } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
 import { closeSearchPanel, findNext, findPrevious, openSearchPanel, search, searchKeymap, SearchQuery, setSearchQuery } from '@codemirror/search'
 import type { Extension } from '@codemirror/state'
-import { drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view'
+import { EditorState } from '@codemirror/state'
+import { drawSelection, EditorView, keymap, lineNumbers, placeholder } from '@codemirror/view'
 import { useClipboard } from '@vueuse/core'
 import type { SlotsType } from 'vue'
 import { computed, defineComponent, h, provide, ref, shallowRef, Teleport, toValue, watch } from 'vue'
@@ -25,7 +26,7 @@ import IconRegex from '~icons/lucide/regex'
 import IconSearch from '~icons/lucide/search'
 import IconUndo from '~icons/lucide/undo'
 
-import { codeBlockCustomRenderExt, githubLightTheme, panelsContainer, panelTopTheme } from './extensions'
+import { codeBlockCustomRenderExt, codeDefaultTheme, githubLightTheme, panelsContainer, panelTopTheme } from './extensions'
 import { codeEditStoreKey } from './store'
 import type { CodeEditCodeBlock, CodeEditCodeBlockSlot, VueCodeMirrorProps } from './Types'
 import { useCodeMirror } from './useCodeMirror'
@@ -86,6 +87,8 @@ const CodeEditPro = defineComponent<CodeEditProProps, CodeEditProEmits, string, 
     return null
   }
 
+  const codeEditHeight = computed(() => toValue(props.height))
+
   const extensions = computed(() => {
     const extensions: Extension[] = [
       drawSelection(),
@@ -140,6 +143,19 @@ const CodeEditPro = defineComponent<CodeEditProProps, CodeEditProEmits, string, 
     extensions.unshift(githubLightTheme())
     extensions.unshift(panelsContainer({ topContainer: codeTopContainer.value }))
     extensions.unshift(panelTopTheme())
+
+    // 以下扩展原先由 useCodeMirror 内置 Compartment 管理，
+    // 重构后由 CodeEditPro 自行拼装，保持行为等价。
+    const placeholderText = toValue(props.placeholder)
+    if (placeholderText) {
+      extensions.push(placeholder(placeholderText))
+    }
+    extensions.push(EditorState.readOnly.of(!!toValue(props.readOnly)))
+    extensions.push(codeDefaultTheme({
+      height: codeEditHeight.value,
+      minHeight: codeEditHeight.value === undefined ? '200px' : toValue(props.minHeight),
+      maxHeight: codeEditHeight.value === undefined ? '400px' : toValue(props.maxHeight),
+    }))
     return extensions
   })
 
@@ -150,16 +166,9 @@ const CodeEditPro = defineComponent<CodeEditProProps, CodeEditProEmits, string, 
 
   const codeValue = ref(toValue(props.value) || '')
 
-  const codeEditHeight = computed(() => toValue(props.height))
   const { view, state } = useCodeMirror({
     value: codeValue,
     container: refEditorDom,
-    height: codeEditHeight,
-    minHeight: computed(() => codeEditHeight.value === undefined ? '200px' : toValue(props.minHeight)),
-    maxHeight: computed(() => codeEditHeight.value === undefined ? '400px' : toValue(props.maxHeight)),
-
-    placeholder: computed(() => toValue(props.placeholder)),
-    readOnly: computed(() => toValue(props.readOnly)),
     extensions,
     onChange(value, viewUpdate) {
       undoAndRedoDepth.value = {
