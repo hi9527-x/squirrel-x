@@ -5,15 +5,15 @@ import { inject } from 'vue'
 
 import type { MaybeUndefinedRefOrGetter } from './Types'
 
-type CodeEditStore = {
+type CodeEditorStore = {
   state?: MaybeUndefinedRefOrGetter<EditorState>
   view?: MaybeUndefinedRefOrGetter<EditorView>
 }
 
-export const codeEditStoreKey = Symbol('codeEditStore') as InjectionKey<CodeEditStore>
+export const codeEditorStoreKey = Symbol('codeEditorStore') as InjectionKey<CodeEditorStore>
 
 export function useCodeStore() {
-  const store = inject(codeEditStoreKey)
+  const store = inject(codeEditorStoreKey)
   return {
     state: store?.state,
     view: store?.view,

@@ -92,12 +92,21 @@ const router = createRouter({
       component: () => import('@/views/codeHljs/index.vue'),
     },
     {
-      path: '/codeEdit',
-      name: 'codeEdit',
+      path: '/codeEditor',
+      name: 'codeEditor',
       meta: {
         title: '代码编辑',
       },
-      component: () => import('@/views/codeEdit'),
+      // component: () => import('@/views/codeEditor'),
+      redirect: '/codeEditor/code-editor-antd-vue',
+      children: [
+        {
+          path: 'code-editor-antd-vue',
+          name: 'code-editor-antd-vue',
+          meta: { title: 'codeEditor-antd-vue' },
+          component: () => import('@/views/codeEditor/antd'),
+        }
+      ],
     },
     {
       path: '/changelog',

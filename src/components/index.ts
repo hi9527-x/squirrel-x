@@ -1,6 +1,6 @@
-// code edit
-export type { CodeEditProSlots } from './CodeEdit'
-export { CodeEdit, CodeEditPro } from './CodeEdit'
+// code editor
+export type { CodeEditorProSlots } from './CodeEditor'
+export { CodeEditor, CodeEditorPro } from './CodeEditor'
 
 // code hljs
 export type { CodeProps } from './CodeHljs'

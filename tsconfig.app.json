@@ -4,7 +4,6 @@
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
 
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "squirrel-x": ["./src/components/index.ts"],

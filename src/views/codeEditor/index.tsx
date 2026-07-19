@@ -1,6 +1,6 @@
 import { Modal } from 'ant-design-vue'
-import type { CodeEditProSlots } from 'squirrel-x'
-import { Button, CodeEditPro } from 'squirrel-x'
+import type { CodeEditorProSlots } from 'squirrel-x'
+import { Button, CodeEditorPro } from 'squirrel-x'
 import Mermaid from 'squirrel-x/Mermaid'
 import type { SlotsType, VNode } from 'vue'
 import { defineComponent, ref } from 'vue'
@@ -11,9 +11,9 @@ type Slots = {}
 type Emits = {}
 type Props = {}
 
-type CodeBlokParams = Parameters<NonNullable<CodeEditProSlots['codeBlock']>>[0]
+type CodeBlokParams = Parameters<NonNullable<CodeEditorProSlots['codeBlock']>>[0]
 
-const CodeEditDemo = defineComponent<Props, Emits, string, SlotsType<Slots>>((props, ctx) => {
+const CodeEditorDemo = defineComponent<Props, Emits, string, SlotsType<Slots>>((props, ctx) => {
   const language = ref('markdown')
   const valCode = ref(content)
   const handlePreviewMermaid = (code?: string) => {
@@ -34,7 +34,7 @@ const CodeEditDemo = defineComponent<Props, Emits, string, SlotsType<Slots>>((pr
   return () => {
     return (
       <div>
-        <CodeEditPro
+        <CodeEditorPro
           value={valCode}
           onLanguageChange={(l) => { language.value = l }}
           onChange={v => valCode.value = v}
@@ -64,4 +64,4 @@ const CodeEditDemo = defineComponent<Props, Emits, string, SlotsType<Slots>>((pr
   props: [],
 })
 
-export default CodeEditDemo
+export default CodeEditorDemo

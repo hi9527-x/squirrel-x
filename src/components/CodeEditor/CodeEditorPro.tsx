@@ -27,15 +27,15 @@ import IconSearch from '~icons/lucide/search'
 import IconUndo from '~icons/lucide/undo'
 
 import { codeBlockCustomRenderExt, codeDefaultTheme, githubLightTheme, panelsContainer, panelTopTheme } from './extensions'
-import { codeEditStoreKey } from './store'
-import type { CodeEditCodeBlock, CodeEditCodeBlockSlot, VueCodeMirrorProps } from './Types'
+import { codeEditorStoreKey } from './store'
+import type { CodeEditorCodeBlock, CodeEditorCodeBlockSlot, VueCodeMirrorProps } from './Types'
 import { useCodeMirror } from './useCodeMirror'
 
-export type CodeEditProSlots = {
-  codeBlock?: CodeEditCodeBlockSlot
+export type CodeEditorProSlots = {
+  codeBlock?: CodeEditorCodeBlockSlot
 }
-type CodeEditProEmits = {}
-type CodeEditProProps = VueCodeMirrorProps & {
+type CodeEditorProEmits = {}
+type CodeEditorProProps = VueCodeMirrorProps & {
   language?: string
   onLanguageChange?: (lang: string) => void
   class?: string
@@ -52,7 +52,7 @@ const options = languageNames.map((name) => {
 })
 // const languageNames = languages.map(it => it.name)
 
-const CodeEditPro = defineComponent<CodeEditProProps, CodeEditProEmits, string, SlotsType<CodeEditProSlots>>((props, ctx) => {
+const CodeEditorPro = defineComponent<CodeEditorProProps, CodeEditorProEmits, string, SlotsType<CodeEditorProSlots>>((props, ctx) => {
   const codeTopContainer = ref<HTMLElement>()
   const refEditorDom = ref<HTMLDivElement>()
 
@@ -65,8 +65,8 @@ const CodeEditPro = defineComponent<CodeEditProProps, CodeEditProEmits, string, 
 
   const languageExt = shallowRef<LanguageSupport>()
 
-  const codeBlockList = shallowRef<CodeEditCodeBlock[]>([])
-  const handleCodeBlockChange = (params: CodeEditCodeBlock, type: 'add' | 'remove') => {
+  const codeBlockList = shallowRef<CodeEditorCodeBlock[]>([])
+  const handleCodeBlockChange = (params: CodeEditorCodeBlock, type: 'add' | 'remove') => {
     if (type === 'add') {
       codeBlockList.value = [
         ...codeBlockList.value,
@@ -87,7 +87,7 @@ const CodeEditPro = defineComponent<CodeEditProProps, CodeEditProEmits, string, 
     return null
   }
 
-  const codeEditHeight = computed(() => toValue(props.height))
+  const codeEditorHeight = computed(() => toValue(props.height))
 
   const extensions = computed(() => {
     const extensions: Extension[] = [
@@ -145,16 +145,16 @@ const CodeEditPro = defineComponent<CodeEditProProps, CodeEditProEmits, string, 
     extensions.unshift(panelTopTheme())
 
     // 以下扩展原先由 useCodeMirror 内置 Compartment 管理，
-    // 重构后由 CodeEditPro 自行拼装，保持行为等价。
+    // 重构后由 CodeEditorPro 自行拼装，保持行为等价。
     const placeholderText = toValue(props.placeholder)
     if (placeholderText) {
       extensions.push(placeholder(placeholderText))
     }
     extensions.push(EditorState.readOnly.of(!!toValue(props.readOnly)))
     extensions.push(codeDefaultTheme({
-      height: codeEditHeight.value,
-      minHeight: codeEditHeight.value === undefined ? '200px' : toValue(props.minHeight),
-      maxHeight: codeEditHeight.value === undefined ? '400px' : toValue(props.maxHeight),
+      height: codeEditorHeight.value,
+      minHeight: codeEditorHeight.value === undefined ? '200px' : toValue(props.minHeight),
+      maxHeight: codeEditorHeight.value === undefined ? '400px' : toValue(props.maxHeight),
     }))
     return extensions
   })
@@ -180,7 +180,7 @@ const CodeEditPro = defineComponent<CodeEditProProps, CodeEditProEmits, string, 
     },
   })
 
-  provide(codeEditStoreKey, {
+  provide(codeEditorStoreKey, {
     state,
     view,
   })
@@ -409,4 +409,4 @@ const CodeEditPro = defineComponent<CodeEditProProps, CodeEditProEmits, string, 
   inheritAttrs: false,
 })
 
-export default CodeEditPro
+export default CodeEditorPro

@@ -25,10 +25,10 @@ export type VueCodeMirrorProps = Partial<{
 }>
 
 export type UseCodeMirror = VueCodeMirrorProps & Partial<{
-  container?: Ref<HTMLDivElement | undefined>
+  container?: Ref<HTMLElement | undefined>
 }>
 
-export type CodeEditCodeBlock = {
+export type CodeEditorCodeBlock = {
   uid: string
   dom: HTMLElement
   code: string
@@ -36,4 +36,4 @@ export type CodeEditCodeBlock = {
   vnode: VNodeChild
 }
 
-type CodeEditCodeBlockSlot = (params: { code: string, language: string }) => VNodeChild
+type CodeEditorCodeBlockSlot = (params: { code: string, language: string }) => VNodeChild

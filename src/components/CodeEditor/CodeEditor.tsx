@@ -10,8 +10,8 @@ import { cn, safeArray } from '@/utils'
 import type { UseCodeMirror } from './Types'
 import { useCodeMirror } from './useCodeMirror'
 
-type CodeEditSlots = {}
-export type CodeEditEmits = {
+type CodeEditorSlots = {}
+export type CodeEditorEmits = {
   'update:value': (value: string) => void
   'update': (viewUpdate: ViewUpdate) => void
   'focus': () => void
@@ -19,28 +19,29 @@ export type CodeEditEmits = {
   'click': () => void
   'loaded': (editorView: EditorView) => void
 }
-export type CodeEditProps = {
+export type CodeEditorProps = {
   value?: string
   extensions?: Extension[]
+
   placeholder?: string
   readOnly?: boolean
   editable?: boolean
   class?: string
 }
 
-export type CodeEditInsertParams = { from: number, to?: number, value: string }
-export type CodeEditReplaceParams = { from: number, to: number, value: string }
-export type CodeEditExpose = {
+export type CodeEditorInsertParams = { from: number, to?: number, value: string }
+export type CodeEditorReplaceParams = { from: number, to: number, value: string }
+export type CodeEditorExpose = {
   getEditorView: () => EditorView | null
   focus: () => void
   blur: () => void
-  insert: (params: CodeEditInsertParams) => void
-  replace: (params: CodeEditReplaceParams) => void
+  insert: (params: CodeEditorInsertParams) => void
+  replace: (params: CodeEditorReplaceParams) => void
   clear: () => void
 }
 
-const CodeEdit = defineComponent<CodeEditProps, CodeEditEmits, string, SlotsType<CodeEditSlots>>((props, ctx) => {
-  const refCodeEditEle = ref<HTMLElement>()
+const CodeEditor = defineComponent<CodeEditorProps, CodeEditorEmits, string, SlotsType<CodeEditorSlots>>((props, ctx) => {
+  const refCodeEditorEle = ref<HTMLElement>()
 
   // 把 placeholder / readOnly / editable 这些"业务扩展"拼进 extensions，
   // useCodeMirror 只负责 value + extensions + callbacks 三件事。
@@ -57,8 +58,8 @@ const CodeEdit = defineComponent<CodeEditProps, CodeEditEmits, string, SlotsType
   const cmProps: UseCodeMirror = {
     value: () => props.value,
     extensions: innerExtensions,
-    syncState: false,
-    container: refCodeEditEle,
+    // syncState: false,
+    container: refCodeEditorEle,
     onCreateEditor: editorView => ctx.emit('loaded', editorView),
     onChange: value => ctx.emit('update:value', value),
     onUpdate: (vu) => {
@@ -80,10 +81,10 @@ const CodeEdit = defineComponent<CodeEditProps, CodeEditEmits, string, SlotsType
     getEditorView: () => view.value ?? null,
     focus: () => view.value?.focus(),
     blur: () => view.value?.contentDOM.blur(),
-    insert: ({ from, to, value }: CodeEditInsertParams) => {
+    insert: ({ from, to, value }: CodeEditorInsertParams) => {
       dispatchExternal({ from, to: to ?? from, insert: value })
     },
-    replace: ({ from, to, value }: CodeEditReplaceParams) => {
+    replace: ({ from, to, value }: CodeEditorReplaceParams) => {
       dispatchExternal({ from, to, insert: value })
     },
     clear: () => {
@@ -91,12 +92,12 @@ const CodeEdit = defineComponent<CodeEditProps, CodeEditEmits, string, SlotsType
       if (!v) return
       dispatchExternal({ from: 0, to: v.state.doc.length, insert: '' })
     },
-  } satisfies CodeEditExpose)
+  } satisfies CodeEditorExpose)
 
   return () => {
     return (
       <div
-        ref={refCodeEditEle}
+        ref={refCodeEditorEle}
         class={cn(
           props.class,
         )}
@@ -108,7 +109,6 @@ const CodeEdit = defineComponent<CodeEditProps, CodeEditEmits, string, SlotsType
 }, {
   props: ['value', 'extensions', 'placeholder', 'readOnly', 'editable', 'class'],
   inheritAttrs: false,
-  // model: { prop: 'value', event: 'update:value' },
 })
 
-export default CodeEdit
+export default CodeEditor

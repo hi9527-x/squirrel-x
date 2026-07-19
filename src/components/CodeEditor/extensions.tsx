@@ -8,7 +8,7 @@ import type { VNodeChild } from 'vue'
 
 import { isEmptySlot } from '@/utils'
 
-import type { CodeEditCodeBlock } from './Types'
+import type { CodeEditorCodeBlock } from './Types'
 
 export type ThemeSizeParams = { height: string, minHeight: string, maxHeight: string }
 
@@ -78,7 +78,7 @@ export function panelTopTheme() {
 }
 
 export function codeBlockCustomRenderExt(config: {
-  onChange: (list: CodeEditCodeBlock, type: 'add' | 'remove') => void
+  onChange: (list: CodeEditorCodeBlock, type: 'add' | 'remove') => void
   getVnode: (params: { code: string, language: string }) => VNodeChild | null
 }) {
   class CodeBlockButtonWidget extends WidgetType {
